@@ -3,21 +3,23 @@ channels:
 - conda-forge
 - nodefaults
 dependencies:
-- pip
-- python
+- pip=24.3.1
+- python=3.13
 - pip:
-  - dvc
-  - dvc-s3
-  - hydra-core
-  - joblib
-  - matplotlib
-  - numpy
-  - omegaconf
-  - opencv-python
-  - openpyxl
-  - pandas
-  - Pillow
-  - pre-commit
-  - scikit-learn
-  - tomli
-  - tqdm
+  - dvc==3.56.0
+  - dvc-gs==3.0.1
+  - hydra-core==1.3.2
+  - joblib==1.4.2
+  - matplotlib==3.9.2
+  - numpy==2.1.3
+  - omegaconf==2.3.0
+  - openai==1.54.3
+  - openpyxl==3.1.5
+  - pandas==2.2.3
+  - pre-commit==4.0.1
+  - pycountry==24.6.1
+  - scikit-learn==1.5.2
+  - scipy==1.14.1
+  - seaborn==0.13.2
+  - tomli==2.0.2
+  - tqdm==4.67.0
