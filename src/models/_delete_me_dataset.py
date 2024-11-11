@@ -216,4 +216,4 @@ if __name__ == '__main__':
     )
     for idx in range(30):
         img, mask = dataset[idx]
-    print('Complete')
+    print('Done')
