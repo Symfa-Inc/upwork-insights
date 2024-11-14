@@ -4,17 +4,15 @@ defaults:
 
 data_dir: data/raw
 save_dir: data/interim
-
-data:
-  files:
-    ADDITIONALSKILLS: ${data_dir}/ADDITIONALSKILLS.csv
-    JOB_ONTOLOGY_SKILLS: ${data_dir}/JOB_ONTOLOGY_SKILLS.csv
-    ONTOLOGY_SKILLS: ${data_dir}/ONTOLOGY_SKILLS.csv
-    SIMILAR_JOBS: ${data_dir}/SIMILAR_JOBS.csv
-    COMPANIES: ${data_dir}/COMPANIES.csv
-    JOB_TAGS: ${data_dir}/JOB_TAGS.csv
-    OPEN_JOBS: ${data_dir}/OPEN_JOBS.csv
-    WORK_HISTORY: ${data_dir}/WORK_HISTORY.csv
-    JOBS: ${data_dir}/JOBS.csv
-    OCCUPATIONS: ${data_dir}/OCCUPATIONS.csv
-    SEGMENTATIONDATA: ${data_dir}/SEGMENTATIONDATA.csv
+files:
+  ADDITIONALSKILLS: ${data_dir}/ADDITIONALSKILLS.csv
+  JOB_ONTOLOGY_SKILLS: ${data_dir}/JOB_ONTOLOGY_SKILLS.csv
+  ONTOLOGY_SKILLS: ${data_dir}/ONTOLOGY_SKILLS.csv
+  SIMILAR_JOBS: ${data_dir}/SIMILAR_JOBS.csv
+  COMPANIES: ${data_dir}/COMPANIES.csv
+  JOB_TAGS: ${data_dir}/JOB_TAGS.csv
+  OPEN_JOBS: ${data_dir}/OPEN_JOBS.csv
+  WORK_HISTORY: ${data_dir}/WORK_HISTORY.csv
+  JOBS: ${data_dir}/JOBS.csv
+  OCCUPATIONS: ${data_dir}/OCCUPATIONS.csv
+  SEGMENTATIONDATA: ${data_dir}/SEGMENTATIONDATA.csv
