@@ -1,6 +1,6 @@
 import logging
 import os
-from typing import Dict
+from typing import Dict, Optional
 
 import hydra
 import pandas as pd
@@ -25,18 +25,48 @@ def log_table_columns(
     log.info('')
 
 
+def load_and_clean_csv(filename: str, index_col: Optional[str] = None) -> pd.DataFrame:
+    """Read a CSV file, clean it by removing NaN or duplicate index values, and return a DataFrame.
+
+    This function reads a single CSV file, optionally sets an index column, and cleans the data by
+    dropping rows with NaN values in the index and duplicate entries. When duplicates exist, the most
+    recent entry is retained based on the `PARSED` column.
+
+    Args:
+        filename (str): Path to the CSV file to be read.
+        index_col (Optional[str]): Column name to use as the index. Defaults to None.
+
+    Returns:
+        pd.DataFrame: A cleaned Pandas DataFrame with duplicates removed and the index set.
+    """
+    df = pd.read_csv(filename, index_col=index_col)
+
+    # Drop rows with NaN in the index
+    df = df[~df.index.isnull()]
+    # Remove duplicate index entries, keeping the first occurrence
+    df = df.sort_values(by='PARSED').drop_duplicates(keep='last')
+
+    return df
+
+
 def load_and_merge_datasets(cfg: DictConfig) -> pd.DataFrame:
     """Loads and merges datasets as per the configuration."""
-    jobs_df = pd.read_csv(cfg.files.JOBS)
-    work_history_df = pd.read_csv(cfg.files.WORK_HISTORY)
-    companies_df = pd.read_csv(cfg.files.COMPANIES)
+    jobs_df = load_and_clean_csv(cfg.files.JOBS, index_col='ID')
+    work_history_df = load_and_clean_csv(cfg.files.WORK_HISTORY, index_col='JOBID')
+    companies_df = load_and_clean_csv(cfg.files.COMPANIES, index_col='UID')
     additional_skills_df = pd.read_csv(cfg.files.ADDITIONALSKILLS)
     job_tags_df = pd.read_csv(cfg.files.JOB_TAGS)
     occupations_df = pd.read_csv(cfg.files.OCCUPATIONS)
     segmentation_data_df = pd.read_csv(cfg.files.SEGMENTATIONDATA)
     ontology_skills_df = pd.read_csv(cfg.files.ONTOLOGY_SKILLS)
     job_ontology_skills_df = pd.read_csv(cfg.files.JOB_ONTOLOGY_SKILLS)
-
+    job_skills_with_labels = pd.merge(
+        job_ontology_skills_df,
+        ontology_skills_df,
+        left_on='SKILLID',
+        right_on='ID',
+        how='inner',
+    )
     # Merging datasets step-by-step
     merged_df = merge_jobs_with_work_history(jobs_df, work_history_df)
     merged_df = merge_with_companies(merged_df, companies_df)
@@ -61,9 +91,14 @@ def load_and_merge_datasets(cfg: DictConfig) -> pd.DataFrame:
         value_col='PREFLABEL',
         new_col_name='OCCUPATIONS',
     )
+    merged_df = merge_with_grouped_data(
+        merged_df=merged_df,
+        df=job_skills_with_labels,
+        key='JOBID',
+        value_col='PREFLABEL',
+        new_col_name='SKILLS',
+    )
     merged_df = merge_segmentation_data(merged_df, segmentation_data_df)
-    merged_df = merge_ontology_skills(merged_df, job_ontology_skills_df, ontology_skills_df)
-
     return merged_df
 
 
@@ -76,10 +111,11 @@ def merge_jobs_with_work_history(
         jobs_df,
         work_history_df.add_prefix('WH_'),
         left_on='ID',
-        right_on='WH_JOBID',
+        right_index=True,
         how='inner',
     )
     log.info(f'Initial JOBS dataset length: {len(jobs_df)}')
+    log.info(f'Initial WORK_HISTORY dataset length: {len(work_history_df)}')
     log.info(f'Length after merging with WORK_HISTORY: {len(merged_df)}')
     return merged_df
 
@@ -93,9 +129,10 @@ def merge_with_companies(
         merged_df,
         companies_df.add_prefix('COMPANY_'),
         left_on='COMPANYUID',
-        right_on='COMPANY_UID',
+        right_index=True,
         how='left',
     )
+    log.info(f'Initial COMPANIES dataset length: {len(companies_df)}')
     log.info(f'Length after merging with COMPANIES: {len(merged_df)}')
     return merged_df
 
@@ -114,7 +151,7 @@ def merge_with_grouped_data(
         .reset_index()
         .rename(columns={value_col: new_col_name})
     )
-    merged_df = pd.merge(merged_df, grouped, left_on='ID', right_on=key, how='left').drop(
+    merged_df = pd.merge(merged_df, grouped, left_index=True, right_on=key, how='left').drop(
         columns=[key],
     )
     log.info(f'Length after adding {new_col_name}: {len(merged_df)}')
@@ -134,7 +171,7 @@ def merge_segmentation_data(
         .reset_index()
         .rename(columns={0: 'SEGMENTATIONDATA'})
     )
-    merged_df = pd.merge(merged_df, grouped, left_on='ID', right_on='JOBID', how='left').drop(
+    merged_df = pd.merge(merged_df, grouped, left_index=True, right_on='JOBID', how='left').drop(
         columns=['JOBID'],
     )
     log.info(f'Length after adding SEGMENTATIONDATA: {len(merged_df)}')
@@ -186,8 +223,6 @@ def drop_unnecessary_columns(df: pd.DataFrame) -> None:
         'COMPANYUID',
         'WH_COMPANYUID',
         'WH_COMPANYID',
-        'WH_JOBID',
-        'WH_JOBUID',
         'COMPANY_RID',
         'COMPANY_LOGOURL',
     ]
