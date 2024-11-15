@@ -1,0 +1,18 @@
+defaults:
+- main
+- _self_
+
+data_dir: data/raw
+save_dir: data/interim
+files:
+  ADDITIONALSKILLS: ${data_dir}/ADDITIONALSKILLS.csv.gz
+  JOB_ONTOLOGY_SKILLS: ${data_dir}/JOB_ONTOLOGY_SKILLS.csv.gz
+  ONTOLOGY_SKILLS: ${data_dir}/ONTOLOGY_SKILLS.csv.gz
+  SIMILAR_JOBS: ${data_dir}/SIMILAR_JOBS.csv.gz
+  COMPANIES: ${data_dir}/COMPANIES.csv.gz
+  JOB_TAGS: ${data_dir}/JOB_TAGS.csv.gz
+  OPEN_JOBS: ${data_dir}/OPEN_JOBS.csv.gz
+  WORK_HISTORY: ${data_dir}/WORK_HISTORY.csv.gz
+  JOBS: ${data_dir}/JOBS.csv.gz
+  OCCUPATIONS: ${data_dir}/OCCUPATIONS.csv.gz
+  SEGMENTATIONDATA: ${data_dir}/SEGMENTATIONDATA.csv.gz
