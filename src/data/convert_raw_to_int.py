@@ -41,7 +41,7 @@ def load_and_clean_csv(filename: str, index_col: Optional[str] = None) -> pd.Dat
     """
     df = pd.read_csv(filename, index_col=index_col)
     # Replace \n and \\n with None (interpreted as NaN in Pandas)
-    df.replace({r'\\N': None, r'\N': None}, inplace=True)
+    df.replace(to_replace=r'\\+N', value=None, regex=True, inplace=True)
     # Drop rows with NaN in the index
     df = df[~df.index.isnull()]
     # Remove duplicate index entries, keeping the first occurrence
