@@ -40,6 +40,8 @@ def load_and_clean_csv(filename: str, index_col: Optional[str] = None) -> pd.Dat
         pd.DataFrame: A cleaned Pandas DataFrame with duplicates removed and the index set.
     """
     df = pd.read_csv(filename, index_col=index_col)
+    # Replace \n and \\n with None (interpreted as NaN in Pandas)
+    df.replace({r'\\N': None, r'\N': None}, inplace=True)
     # Drop rows with NaN in the index
     df = df[~df.index.isnull()]
     # Remove duplicate index entries, keeping the first occurrence
