@@ -44,11 +44,13 @@ class CityProcessor(LocationProcessor):
         self,
         name: str,
         top_k: int = 3,
+        threshold: float = 0.75,
     ) -> List[Tuple[str, float]]:
         normalized_name = self._normalize(name)
         similarities = [(city, ratio(normalized_name, city)) for city in self.database]
-        results = sorted(similarities, key=lambda x: x[1], reverse=True)[:top_k]
-        return results
+        filtered_results = [item for item in similarities if item[1] >= threshold]
+        final_results = sorted(filtered_results, key=lambda x: x[1], reverse=True)[:top_k]
+        return final_results
 
 
 class CountryProcessor(LocationProcessor):
@@ -58,11 +60,13 @@ class CountryProcessor(LocationProcessor):
         self,
         name: str,
         top_k: int = 3,
-    ) -> list[tuple[str, float]]:
+        threshold: float = 0.75,
+    ) -> List[Tuple[str, float]]:
         normalized_name = self._normalize(name)
-        similarities = [(country, ratio(normalized_name, country)) for country in self.database]
-        results = sorted(similarities, key=lambda x: x[1], reverse=True)[:top_k]
-        return results
+        similarities = [(city, ratio(normalized_name, city)) for city in self.database]
+        filtered_results = [item for item in similarities if item[1] >= threshold]
+        final_results = sorted(filtered_results, key=lambda x: x[1], reverse=True)[:top_k]
+        return final_results
 
 
 if __name__ == '__main__':
@@ -70,11 +74,23 @@ if __name__ == '__main__':
     csv_path = 'data/geodata.csv'
 
     city_processor = CityProcessor(database_path=csv_path, column_name='city_ascii')
-    test_city_names = ['Örhus', 'Aarhus', 'aarhus', 'Aarhus C', 'Aarhus N', 'Aarhus V']
+    test_city_names = ['Örhus', 'Århus', 'Aarhus', 'aarhus', 'Aarhus C', 'Aarhus N', 'Aarhus V']
     for city_name in test_city_names:
-        print(city_name, city_processor.get_similar(city_name, top_k=3))
+        result = city_processor.get_similar(city_name, top_k=1, threshold=0.7)
+        if result:
+            target_country_name, target_score = result[0]
+            print(f'{city_name} -> {target_country_name.capitalize()} (Score: {target_score:.2f})')
+        else:
+            print(f'{city_name} -> No match found')
 
     country_processor = CountryProcessor(database_path=csv_path, column_name='country')
     test_country_names = ['Dnemark', 'Danmark', 'Denmarc', 'Denmark C', 'Denmark N', 'Denmark V']
     for country_name in test_country_names:
-        print(country_name, country_processor.get_similar(country_name, top_k=3))
+        result = country_processor.get_similar(country_name, top_k=1, threshold=0.7)
+        if result:
+            target_country_name, target_score = result[0]
+            print(
+                f'{country_name} -> {target_country_name.capitalize()} (Score: {target_score:.2f})',
+            )
+        else:
+            print(f'{country_name} -> No match found')
