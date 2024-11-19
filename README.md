@@ -41,7 +41,7 @@ A data science and machine learning project focused on analyzing patterns in the
   - [x] macOS
   - [x] Linux
   - [x] Windows (limited testing carried out)
-- Python 3.13.x
+- Python 3.12.x
 - Required core libraries: [environment.yaml](environment.yaml)
 
 <a name="installation"></a>
