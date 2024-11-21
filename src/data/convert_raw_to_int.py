@@ -227,7 +227,7 @@ def drop_unnecessary_columns(df: pd.DataFrame) -> None:
         'OCCUPATIONPRIMARYBROADER',
         'CATEGORYURLSLUG',
         'CATEGORYGROUPURLSLUG',
-        'COMPANYUID',
+        'COMPANYID',
         'WH_COMPANYUID',
         'WH_COMPANYID',
         'COMPANY_RID',
