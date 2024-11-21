@@ -3,6 +3,18 @@ import os
 from pathlib import Path
 from typing import List, Union
 
+import pandas as pd
+
+
+def safe_literal_eval(val):
+    """Safely evaluate a string to a Python literal, handling empty strings."""
+    if pd.isnull(val) or val.strip() == '':
+        return []  # Treat empty strings or NaN as empty lists
+    try:
+        return ast.literal_eval(val)
+    except (SyntaxError, ValueError):
+        return None  # Replace malformed entries with None
+
 
 def get_csv_converters() -> dict:
     """Returns a dictionary of converters for specific columns when reading CSV files.
@@ -19,9 +31,9 @@ def get_csv_converters() -> dict:
         >>> df = pd.read_csv("example.csv", converters=converters)
     """
     converters = {
-        'SKILLS': ast.literal_eval,
-        'TAGS': ast.literal_eval,
-        'ADDITIONAL_SKILLS': ast.literal_eval,
+        'SKILLS': safe_literal_eval,
+        'TAGS': safe_literal_eval,
+        'ADDITIONAL_SKILLS': safe_literal_eval,
     }
     return converters
 
