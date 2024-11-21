@@ -221,6 +221,13 @@ def drop_unnecessary_columns(df: pd.DataFrame) -> None:
         'WH_COMPANYID',
         'COMPANY_RID',
         'COMPANY_LOGOURL',
+        'HOURLYENGAGEMENTDURATIONMTIME',
+        'HOURLYENGAGEMENTDURATIONCTIME',
+        'WH_JOBUID',
+        'FIXEDPRICEENGAGEMENTDURATIONID',
+        'FIXEDPRICEENGAGEMENTDURATIONRID',
+        'FIXEDPRICEENGAGEMENTDURATIONWEEKS',
+        'HOURLYENGAGEMENTDURATIONRID',
     ]
     df.drop(columns=columns_to_drop, inplace=True)
     log.info(f'Final dataset columns: {len(df.columns)}')
