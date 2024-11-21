@@ -1,6 +1,29 @@
+import ast
 import os
 from pathlib import Path
 from typing import List, Union
+
+
+def get_csv_converters() -> dict:
+    """Returns a dictionary of converters for specific columns when reading CSV files.
+
+    The converters are used to process specific columns in the CSV during loading with `pd.read_csv`.
+    For example, columns containing list-like strings can be deserialized into Python lists.
+
+    Returns:
+        dict: A dictionary where keys are column names and values are functions
+              to process the column data during CSV reading.
+
+    Example:
+        >>> converters = get_csv_converters()
+        >>> df = pd.read_csv("example.csv", converters=converters)
+    """
+    converters = {
+        'SKILLS': ast.literal_eval,
+        'TAGS': ast.literal_eval,
+        'ADDITIONAL_SKILLS': ast.literal_eval,
+    }
+    return converters
 
 
 def get_file_list(
