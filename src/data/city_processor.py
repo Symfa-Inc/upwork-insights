@@ -112,7 +112,7 @@ class CityProcessorGeoCache:
 
             banned_list = ['New York']
             if postcode in [5082331]:
-                alternative_names = filter(lambda x: x not in banned_list, alternative_names)
+                alternative_names = list(filter(lambda x: x not in banned_list, alternative_names))
 
             all_names = [
                 (self._normalize(name), original_name)
