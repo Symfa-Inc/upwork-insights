@@ -1,4 +1,4 @@
-from typing import List, Tuple
+from typing import Optional, Tuple
 
 import pandas as pd
 import unidecode
@@ -12,8 +12,17 @@ class CityProcessor:
         self,
         database_path: str = 'data/geodata.csv',
     ) -> None:
-        data = pd.read_csv(database_path, usecols=['city_ascii'])
-        self.database = [self._normalize(item) for item in data['city_ascii'].dropna().unique()]
+        data = pd.read_csv(database_path, usecols=['city', 'city_ascii', 'iso3', 'lat', 'lng'])
+        self.database = [
+            (
+                self._normalize(row['city']),
+                self._normalize(row['city_ascii']),
+                self._normalize(row['iso3']),
+                row['lat'],
+                row['lng'],
+            )
+            for _, row in data.dropna(subset=['city', 'city_ascii']).iterrows()
+        ]
 
     @staticmethod
     def _normalize(name: str) -> str:
@@ -22,25 +31,68 @@ class CityProcessor:
     def get_similar(
         self,
         name: str,
+        country: str,
         threshold: float = 0.75,
-    ) -> List[Tuple[str, float]]:
+    ) -> Optional[Tuple[str, float, float]]:
+        """Find the best match for a city name and country, returning the city name, latitude, and longitude.
+
+        Args:
+            name (str): The city name to search for.
+            country (str): The country ISO3 code to filter by.
+            threshold (float): The minimum similarity score for a match.
+
+        Returns:
+            Optional[Tuple[str, float, float]]: The matched city name, latitude, and longitude, or None if no match is found.
+        """
         normalized_name = self._normalize(name)
-        similarities = [(city, ratio(normalized_name, city)) for city in self.database]
-        filtered_results = [item for item in similarities if item[1] >= threshold]
-        final_result = sorted(filtered_results, key=lambda x: x[1], reverse=True)[:1]
-        final_result = [(city.title(), score) for city, score in final_result]
-        return final_result
+        normalized_country = self._normalize(country)
+
+        # Filter database by country
+        filtered_db = [
+            (city, city_ascii, iso3, lat, lng)
+            for city, city_ascii, iso3, lat, lng in self.database
+            if normalized_country == iso3
+        ]
+
+        # Calculate similarity scores
+        similarities = [
+            (city, lat, lng, max(ratio(normalized_name, city), ratio(normalized_name, city_ascii)))
+            for city, city_ascii, iso3, lat, lng in filtered_db
+        ]
+
+        # Filter results based on the threshold
+        filtered_results = [
+            (city, lat, lng, score) for city, lat, lng, score in similarities if score >= threshold
+        ]
+
+        # Sort results by similarity score in descending order and pick the best match
+        if filtered_results:
+            best_match = sorted(filtered_results, key=lambda x: x[3], reverse=True)[0]
+            return best_match[0].title(), best_match[1], best_match[2]
+
+        return None
 
 
 if __name__ == '__main__':
     # Example Usage
     csv_path = 'data/geodata.csv'
     city_processor = CityProcessor(database_path=csv_path)
-    test_city_names = ['Örhus', 'Århus', 'Aarhus', 'aarhus', 'Aarhus C', 'Aarhus N', 'Aarhus V']
-    for city_name in test_city_names:
-        result = city_processor.get_similar(city_name, threshold=0.75)
+    test_city_names = [
+        'Örhus',
+        'Århus',
+        'Aarhus',
+        'aarhus',
+        'Aarhus C',
+        'Aarhus N',
+        'Aarhus V',
+        'NY',
+        'Киев',
+    ]
+    test_countries = ['DNK', 'DNK', 'DNK', 'DNK', 'DNK', 'DNK', 'DNK', 'USA', 'UKR']
+    for city_name, city_country in zip(test_city_names, test_countries):
+        result = city_processor.get_similar(city_name, city_country, threshold=0.75)
         if result:
-            target_city_name, target_score = result[0]
+            target_city_name, *_, target_score = result
             print(f'{city_name} -> {target_city_name} (Score: {target_score:.2f})')
         else:
             print(f'{city_name} -> No match found')
