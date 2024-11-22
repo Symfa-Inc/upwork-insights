@@ -109,6 +109,11 @@ class CityProcessorGeoCache:
 
             # Expand with alternative names if available
             alternative_names = city.get('alternatenames', [])
+
+            banned_list = ['New York']
+            if postcode in [5082331]:
+                alternative_names = filter(lambda x: x not in banned_list, alternative_names)
+
             all_names = [
                 (self._normalize(name), original_name)
                 for name in alternative_names + [original_name, postcode]
@@ -147,12 +152,27 @@ class CityProcessorGeoCache:
         ]
         # Filter results based on the threshold
         filtered_results = [
-            (original_name, score) for original_name, score in similarities if score >= threshold
+            (original_name, score) for original_name, score in similarities if score > threshold
         ]
 
         # Sort results by similarity score in descending order and pick the best match
         if filtered_results:
-            best_match = sorted(filtered_results, key=lambda x: x[1], reverse=True)[0]
+            recalculated_scores = [
+                (original_name, score_alt, ratio(normalized_name, self._normalize(original_name)))
+                for original_name, score_alt in filtered_results
+            ]
+            # Calculate a combined score using a weighted approach
+            coef = 0.75
+            combined_scores = [
+                (
+                    original_name,
+                    coef * score_alt + (1 - coef) * score_original,
+                )  # Adjust weights as needed
+                for original_name, score_alt, score_original in recalculated_scores
+            ]
+            best_match = sorted(combined_scores, key=lambda x: x[1], reverse=True)[0]
+
+            # Sort recalculated results by similarity score in descending order
             return best_match[0].title(), best_match[1]
         return None
 
@@ -172,9 +192,12 @@ if __name__ == '__main__':
         ('LA', 'USA'),
         ('NY', 'USA'),
         ('Киев', 'UKR'),
+        ('newyork', 'USA'),
+        ('New York ', 'USA'),
+        ('United States ', 'USA'),
     ]
     for city_name, city_country in test_city_names:
-        result = city_processor.get_similar(city_name, city_country, threshold=0.75)
+        result = city_processor.get_similar(city_name, city_country, threshold=0.8)
         if result:
             target_city_name = result
             print(f'{city_name} -> {target_city_name}')
