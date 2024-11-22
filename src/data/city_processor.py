@@ -1,8 +1,8 @@
 from typing import Optional, Tuple
 
 import pandas as pd
-import pycountry
 import unidecode
+from country_processor import CountryProcessor
 from geonamescache import GeonamesCache
 from Levenshtein import ratio
 
@@ -76,21 +76,16 @@ class CityProcessorGeoCache:
     def __init__(self, min_city_population: int = 500) -> None:
         self.gc = GeonamesCache(min_city_population=min_city_population)
         self.database = self._build_database()
-
-    @staticmethod
-    def _convert_iso2_to_iso3(iso2: str) -> Optional[str]:
-        """Convert ISO2 country code to ISO3."""
-        res = pycountry.countries.get(alpha_2=iso2.upper())
-        if res:
-            return res.alpha_3
-        if iso2 == 'XK':
-            return 'XKS'
-        return None
+        self.country_processor = CountryProcessor()
 
     @staticmethod
     def _normalize(name: str) -> str:
         """Normalize a string for comparison."""
         return unidecode.unidecode(str(name).lower().strip())
+
+    def _convert_iso2_to_iso3(self, iso2: str) -> Optional[str]:
+        """Convert ISO2 country code to ISO3."""
+        return self.country_processor.iso2_to_iso3(iso2)
 
     def _build_database(self) -> dict[str, list]:
         """Build the city database grouped by ISO3 country codes."""
