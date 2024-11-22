@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, Tuple
 
 import pandas as pd
 import pycountry
@@ -33,7 +33,7 @@ class CityProcessor:
         name: str,
         country: str,
         threshold: float = 0.75,
-    ) -> Optional[str]:
+    ) -> Optional[Tuple[str, float]]:
         """Find the best match for a city name and country, returning the city name, latitude, and longitude.
 
         Args:
@@ -66,7 +66,7 @@ class CityProcessor:
         # Sort results by similarity score in descending order and pick the best match
         if filtered_results:
             best_match = sorted(filtered_results, key=lambda x: x[1], reverse=True)[0]
-            return best_match[0].title()
+            return best_match[0].title(), best_match[1]
         return None
 
 
@@ -125,15 +125,13 @@ class CityProcessorGeoCache:
         self,
         name: str,
         country: str,
-        state: Optional[str] = None,
         threshold: float = 0.75,
-    ) -> Optional[str]:
+    ) -> Optional[Tuple[str, float]]:
         """Find the best match for a city name and country, returning the city name.
 
         Args:
             name (str): The city name to search for.
             country (str): The country ISO3 code to filter by.
-            state: (Optional[str]): The US or Canada state as 2 letter code
             threshold (float): The minimum similarity score for a match.
 
         Returns:
@@ -155,7 +153,7 @@ class CityProcessorGeoCache:
         # Sort results by similarity score in descending order and pick the best match
         if filtered_results:
             best_match = sorted(filtered_results, key=lambda x: x[1], reverse=True)[0]
-            return best_match[0].title()
+            return best_match[0].title(), best_match[1]
         return None
 
 
