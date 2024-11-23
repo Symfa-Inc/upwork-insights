@@ -1,4 +1,4 @@
-from typing import Union
+from typing import Optional, Union
 
 import geonamescache
 import unidecode
@@ -11,6 +11,7 @@ class CountryProcessor:
         # Initialize the Geonamescache instance and extract countries
         self.gc = geonamescache.GeonamesCache()
         self.countries = self.gc.get_countries()
+        self.population_database = self._build_population_database()
         # Create mappings for easier lookup
         self.name_to_iso3 = {
             self._normalize(data['name']): data['iso3'] for code, data in self.countries.items()
@@ -21,6 +22,15 @@ class CountryProcessor:
     def _normalize(name: str) -> str:
         """Normalize the input country name for comparison."""
         return unidecode.unidecode(name.lower().strip())
+
+    def _build_population_database(self) -> dict[str, int]:
+        """Creates a map from country tag to population."""
+        population_data: dict[str, int] = {}
+        for _, country in self.countries.items():
+            country_tag = country['iso3']
+            population = country['population']
+            population_data[country_tag] = population
+        return population_data
 
     def _get_geonamescache_match(self, name: str) -> Union[str, None]:
         """Find the closest match for a country name or ISO code using geonamescache."""
@@ -54,6 +64,22 @@ class CountryProcessor:
             str: Standardized 3-letter ISO code or None if no match is found.
         """
         return self._get_geonamescache_match(name)
+
+    def get_population(
+        self,
+        country: str,
+    ) -> Optional[int]:
+        """Find population for of country, returning the population.
+
+        This function assumes search by cleaned country tag.
+
+        Args:
+            country (str): The country ISO3 code to filter by.
+
+        Returns:
+            Optional[int]: Population of a city, or None if no city is found.
+        """
+        return self.population_database.get(country, None)
 
 
 if __name__ == '__main__':
