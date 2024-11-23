@@ -34,7 +34,7 @@ class CityProcessor:
         name: str,
         country: str,
         threshold: float = 0.75,
-    ) -> Optional[Tuple[str, float]]:
+    ) -> Tuple[Optional[str], Optional[float]]:
         """Find the best match for a city name and country, returning the city name, latitude, and longitude.
 
         Args:
@@ -68,7 +68,7 @@ class CityProcessor:
         if filtered_results:
             best_match = sorted(filtered_results, key=lambda x: x[1], reverse=True)[0]
             return best_match[0].title(), best_match[1]
-        return None
+        return None, None
 
 
 class CityProcessorGeoCache:
@@ -123,7 +123,7 @@ class CityProcessorGeoCache:
         name: str,
         country: str,
         threshold: float = 0.75,
-    ) -> Optional[Tuple[str, float]]:
+    ) -> Tuple[Optional[str], Optional[float]]:
         """Find the best match for a city name and country, returning the city name.
 
         Args:
@@ -164,7 +164,7 @@ class CityProcessorGeoCache:
             best_match = sorted(combined_scores, key=lambda x: x[1], reverse=True)[0]
             # Sort recalculated results by similarity score in descending order
             return best_match[0].title(), best_match[1]
-        return None
+        return None, None
 
 
 if __name__ == '__main__':
