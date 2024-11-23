@@ -41,12 +41,9 @@ def clean_country_names(
     df = df.loc[df[country_col].notnull()].copy()
     # Replace specific country names with standardized values
     country_replacements = {
-        'Turkey': 'TUR',
         'Palestinian Territories': 'PSE',
         'Macedonia': 'MKD',
-        'Curacao': 'CUW',
         'United States Virgin Islands': 'VIR',
-        'Russia': 'RUS',
     }
     df[country_col] = df[country_col].replace(country_replacements)
     # Get unique country values
