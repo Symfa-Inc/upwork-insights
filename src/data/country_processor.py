@@ -100,9 +100,14 @@ if __name__ == '__main__':
         'TX',
     ]
 
+    print('Country Name -> ISO3 -> Population')
     for country_name in test_country_names:
         result = country_processor.get_similar(country_name)
         if result:
-            print(f'{country_name} -> {result}')
+            country_population = country_processor.get_population(result)
+            if country_population is not None:
+                print(f'{country_name} -> {result} -> {country_population}')
+            else:
+                print(f'{country_name} -> {result} -> Population data not available')
         else:
             print(f'{country_name} -> No match found')
