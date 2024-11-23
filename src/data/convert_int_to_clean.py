@@ -259,10 +259,14 @@ def main(cfg: DictConfig) -> None:
     # TODO: Process the dataset
     df = clean_country_names(df, country_processor)
     df = clean_postcodes(df)
-    df = clean_city_names(df, city_processor=city_processor, openai_processor=openai_processor)
+    df, df_cities = clean_city_names(
+        df,
+        city_processor=city_processor,
+        openai_processor=openai_processor,
+    )
+    df_cities.to_csv(os.path.join(save_dir, 'cities.csv'))
 
     # df_country = compare_country_processing(df)
-    # df_country.to_csv(os.path.join(save_dir, 'country.csv'))
 
     # Save the clean dataset
     os.makedirs(save_dir, exist_ok=True)
