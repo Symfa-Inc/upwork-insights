@@ -7,7 +7,7 @@ from omegaconf import DictConfig, OmegaConf
 from openai import OpenAI
 
 from src import PROJECT_DIR
-from src.data.city_processor import CityProcessorGeoCache
+from src.data.city_processor import CityProcessor
 from src.data.city_processor_openai import OpenAIProcessor
 from src.data.country_processor import CountryProcessor
 from src.data.utils import get_csv_converters
@@ -91,7 +91,7 @@ def add_country_population(
 
 def get_city_names_mapping(
     df: pd.DataFrame,
-    city_processor: CityProcessorGeoCache,
+    city_processor: CityProcessor,
     openai_processor: OpenAIProcessor,
     city_col: str = 'COMPANY_CITY',
     country_col: str = 'GEO_COUNTRY_NAME',
@@ -116,7 +116,7 @@ def get_city_names_mapping(
 
     Args:
         df (pd.DataFrame): Input DataFrame containing raw city and country information.
-        city_processor (CityProcessorGeoCache): An instance of `CityProcessorGeoCache` for validating and standardizing city names.
+        city_processor (CityProcessor): An instance of `CityProcessorGeoCache` for validating and standardizing city names.
         openai_processor (OpenAIProcessor): An instance of `OpenAIProcessor` for inferring city names
                                             in ambiguous cases.
         city_col (str): The column name in the DataFrame containing raw city names.
@@ -134,7 +134,7 @@ def get_city_names_mapping(
     for _, row in unique_combinations.iterrows():
         city = row[city_col]  # Raw city name
         country = row[country_col]  # Raw country name
-        # Use CityProcessorGeoCache to get the standardized city name and similarity score
+        # Use CityProcessor to get the standardized city name and similarity score
         cleaned_name, score = city_processor.get_similar(city, country)
         # If the similarity score is below the threshold, use OpenAI to infer the city
         if not score or score < 0.88:
@@ -153,7 +153,7 @@ def get_city_names_mapping(
 
 def clean_city_names(
     df: pd.DataFrame,
-    city_processor: CityProcessorGeoCache,
+    city_processor: CityProcessor,
     openai_processor: OpenAIProcessor,
     city_col: str = 'COMPANY_CITY',
     country_col: str = 'GEO_COUNTRY_NAME',
@@ -175,7 +175,7 @@ def clean_city_names(
 
     Args:
         df (pd.DataFrame): Input DataFrame containing raw city and country data.
-        city_processor (CityProcessorGeoCache): An instance of `CityProcessorGeoCache` to handle city name validation
+        city_processor (CityProcessor): An instance of `CityProcessorGeoCache` to handle city name validation
                                          and standardization.
         openai_processor (OpenAIProcessor): An instance of `OpenAIProcessor` to infer city names
                                             in ambiguous or low-confidence cases.
@@ -273,7 +273,7 @@ def add_city_agglomeration(
 
 def add_city_population(
     df: pd.DataFrame,
-    city_processor: CityProcessorGeoCache,
+    city_processor: CityProcessor,
     city_col: str = 'GEO_CITY_NAME',
     country_col: str = 'GEO_COUNTRY_NAME',
     city_population_col: str = 'GEO_CITY_POPULATION',
@@ -286,7 +286,7 @@ def add_city_population(
 
     Args:
         df (pd.DataFrame): Input DataFrame containing city and country information.
-        city_processor (CityProcessorGeoCache): An instance of `CityProcessorGeoCache` used to retrieve
+        city_processor (CityProcessor): An instance of `CityProcessorGeoCache` used to retrieve
                                                 population data based on city and country.
         city_col (str): The column name in the DataFrame containing city names.
                         Default is 'GEO_CITY_NAME'.
@@ -363,7 +363,7 @@ def main(cfg: DictConfig) -> None:
     # Read the dataset
     df = pd.read_csv(data_path, converters=get_csv_converters())  # noqa: F841
     country_processor = CountryProcessor()
-    city_processor = CityProcessorGeoCache()
+    city_processor = CityProcessor()
     openai_processor = OpenAIProcessor(OpenAI())
 
     # TODO: Process the dataset

@@ -1,6 +1,5 @@
 from typing import Optional, Tuple
 
-import pandas as pd
 import unidecode
 from geonamescache import GeonamesCache
 from Levenshtein import ratio
@@ -9,69 +8,6 @@ from src.data.country_processor import CountryProcessor
 
 
 class CityProcessor:
-    """Class for processing city names."""
-
-    def __init__(
-        self,
-        database_path: str = 'data/geodata.csv',
-    ) -> None:
-        data = pd.read_csv(database_path, usecols=['city', 'city_ascii', 'iso3', 'lat', 'lng'])
-        self.database = [
-            (
-                self._normalize(row['city']),
-                self._normalize(row['city_ascii']),
-                self._normalize(row['iso3']),
-            )
-            for _, row in data.dropna(subset=['city', 'city_ascii']).iterrows()
-        ]
-
-    @staticmethod
-    def _normalize(name: str) -> str:
-        return unidecode.unidecode(name.lower().strip())
-
-    def get_similar(
-        self,
-        name: str,
-        country: str,
-        threshold: float = 0.75,
-    ) -> Tuple[Optional[str], Optional[float]]:
-        """Find the best match for a city name and country, returning the city name, latitude, and longitude.
-
-        Args:
-            name (str): The city name to search for.
-            country (str): The country ISO3 code to filter by.
-            threshold (float): The minimum similarity score for a match.
-
-        Returns:
-            Optional[Tuple[str, float, float]]: The matched city name, latitude, and longitude, or None if no match is found.
-        """
-        normalized_name = self._normalize(name)
-        normalized_country = self._normalize(country)
-
-        # Filter database by country
-        filtered_db = [
-            (city, city_ascii, iso3)
-            for city, city_ascii, iso3 in self.database
-            if normalized_country == iso3
-        ]
-
-        # Calculate similarity scores
-        similarities = [
-            (city, max(ratio(normalized_name, city), ratio(normalized_name, city_ascii)))
-            for city, city_ascii, iso3 in filtered_db
-        ]
-
-        # Filter results based on the threshold
-        filtered_results = [(city, score) for city, score in similarities if score >= threshold]
-
-        # Sort results by similarity score in descending order and pick the best match
-        if filtered_results:
-            best_match = sorted(filtered_results, key=lambda x: x[1], reverse=True)[0]
-            return best_match[0].title(), best_match[1]
-        return None, None
-
-
-class CityProcessorGeoCache:
     """Class for processing city names using GeonamesCache."""
 
     def __init__(self, min_city_population: int = 500) -> None:
@@ -207,7 +143,7 @@ class CityProcessorGeoCache:
 if __name__ == '__main__':
     # Example Usage
     csv_path = 'data/geodata.csv'
-    city_processor = CityProcessorGeoCache()
+    city_processor = CityProcessor()
     test_city_names = [
         ('Örhus', 'DNK'),
         ('Århus', 'DNK'),
