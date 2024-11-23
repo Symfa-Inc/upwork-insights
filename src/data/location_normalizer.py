@@ -8,7 +8,7 @@ load_dotenv()
 openai_api_key = os.getenv('OPENAI_API_KEY')
 
 
-class OpenAIProcessor:
+class LocationNormalizer:
     """A processor for interacting with the OpenAI API to standardize and validate city and geographic information.
 
     This class provides functionality to:
@@ -136,8 +136,8 @@ if __name__ == '__main__':
         ('New York', 'ARG'),
         ('nova iorque', 'USA'),
     ]
-    client = OpenAI()
-    openai_processor = OpenAIProcessor(client)
+    client = OpenAI(api_key=openai_api_key)
+    openai_processor = LocationNormalizer(client)
     for place_name, country in place_names:
         city = openai_processor.get_city(place_name, country)
         print(f'{place_name} -> {city}')

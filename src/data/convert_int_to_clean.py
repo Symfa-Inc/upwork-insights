@@ -8,8 +8,8 @@ from openai import OpenAI
 
 from src import PROJECT_DIR
 from src.data.city_processor import CityProcessor
-from src.data.city_processor_openai import OpenAIProcessor
 from src.data.country_processor import CountryProcessor
+from src.data.location_normalizer import LocationNormalizer
 from src.data.utils import get_csv_converters
 
 log = logging.getLogger(__name__)
@@ -92,7 +92,7 @@ def add_country_population(
 def get_city_names_mapping(
     df: pd.DataFrame,
     city_processor: CityProcessor,
-    openai_processor: OpenAIProcessor,
+    openai_processor: LocationNormalizer,
     city_col: str = 'COMPANY_CITY',
     country_col: str = 'GEO_COUNTRY_NAME',
 ) -> dict[str, dict[str, str]]:
@@ -117,7 +117,7 @@ def get_city_names_mapping(
     Args:
         df (pd.DataFrame): Input DataFrame containing raw city and country information.
         city_processor (CityProcessor): An instance of `CityProcessorGeoCache` for validating and standardizing city names.
-        openai_processor (OpenAIProcessor): An instance of `OpenAIProcessor` for inferring city names
+        openai_processor (LocationNormalizer): An instance of `OpenAIProcessor` for inferring city names
                                             in ambiguous cases.
         city_col (str): The column name in the DataFrame containing raw city names.
         country_col (str): The column name in the DataFrame containing raw country names.
@@ -154,7 +154,7 @@ def get_city_names_mapping(
 def clean_city_names(
     df: pd.DataFrame,
     city_processor: CityProcessor,
-    openai_processor: OpenAIProcessor,
+    location_normalizer: LocationNormalizer,
     city_col: str = 'COMPANY_CITY',
     country_col: str = 'GEO_COUNTRY_NAME',
     new_city_col: str = 'GEO_CITY_NAME',
@@ -177,7 +177,7 @@ def clean_city_names(
         df (pd.DataFrame): Input DataFrame containing raw city and country data.
         city_processor (CityProcessor): An instance of `CityProcessorGeoCache` to handle city name validation
                                          and standardization.
-        openai_processor (OpenAIProcessor): An instance of `OpenAIProcessor` to infer city names
+        location_normalizer (LocationNormalizer): An instance of `OpenAIProcessor` to infer city names
                                             in ambiguous or low-confidence cases.
         city_col (str): The column name in the DataFrame containing raw city names.
         country_col (str): The column name in the DataFrame containing raw country names.
@@ -196,7 +196,7 @@ def clean_city_names(
     city_mapping = get_city_names_mapping(
         df,
         city_processor=city_processor,
-        openai_processor=openai_processor,
+        openai_processor=location_normalizer,
         city_col=city_col,
         country_col=country_col,
     )
@@ -229,7 +229,7 @@ def clean_city_names(
 
 def add_city_agglomeration(
     df: pd.DataFrame,
-    openai_processor: OpenAIProcessor,
+    openai_processor: LocationNormalizer,
     city_col: str = 'GEO_CITY_NAME',
     state_col: str = 'COMPANY_STATE',
     country_col: str = 'GEO_COUNTRY_NAME',
@@ -244,7 +244,7 @@ def add_city_agglomeration(
 
     Args:
         df (pd.DataFrame): Input DataFrame containing city, state, and country data.
-        openai_processor (OpenAIProcessor): An instance of `OpenAIProcessor` used to determine
+        openai_processor (LocationNormalizer): An instance of `OpenAIProcessor` used to determine
                                             the agglomeration of a city.
         city_col (str): The column name in the DataFrame containing city names.
                         Default is 'GEO_CITY_NAME'.
@@ -364,9 +364,9 @@ def main(cfg: DictConfig) -> None:
     df = pd.read_csv(data_path, converters=get_csv_converters())  # noqa: F841
     country_processor = CountryProcessor()
     city_processor = CityProcessor()
-    openai_processor = OpenAIProcessor(OpenAI())
+    location_normalizer = LocationNormalizer(OpenAI())
 
-    # TODO: Process the dataset
+    # Process the dataset
     df = clean_country_names(df, country_processor)
     df = add_country_population(df, country_processor)
 
@@ -374,10 +374,10 @@ def main(cfg: DictConfig) -> None:
     df, df_cities = clean_city_names(
         df,
         city_processor,
-        openai_processor,
+        location_normalizer,
     )
     df = add_city_population(df, city_processor)
-    df = add_city_agglomeration(df, openai_processor)
+    df = add_city_agglomeration(df, location_normalizer)
 
     df_cities.to_csv(os.path.join(save_dir, 'cities.csv'), index=False)
 
