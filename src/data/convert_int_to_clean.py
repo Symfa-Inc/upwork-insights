@@ -7,7 +7,7 @@ from omegaconf import DictConfig, OmegaConf
 from openai import OpenAI
 
 from src import PROJECT_DIR
-from src.data.city_processor import CityProcessor
+from src.data.city_processor import CityProcessorGeoCache
 from src.data.city_processor_openai import OpenAIProcessor
 from src.data.country_processor import CountryProcessor
 from src.data.utils import get_csv_converters
@@ -61,9 +61,37 @@ def clean_country_names(
     return df
 
 
+def add_country_population(
+    df: pd.DataFrame,
+    country_processor: CountryProcessor,
+    country_col: str = 'GEO_COUNTRY_NAME',
+    population_col: str = 'GEO_COUNTRY_POPULATION',
+) -> pd.DataFrame:
+    """Add a population column to a DataFrame based on country names.
+
+    This function uses a `CountryProcessor` instance to fetch population data for each country
+    listed in the specified column of the DataFrame. The population data is added as a new column.
+
+    Args:
+        df (pd.DataFrame): Input DataFrame containing country names.
+        country_processor (CountryProcessor): An instance of `CountryProcessor` with a method
+                                              to retrieve population data by country name.
+        country_col (str): The column name in the DataFrame containing country names.
+                           Default is 'GEO_COUNTRY_NAME'.
+        population_col (str): The column name to be added for country population data.
+                              Default is 'GEO_COUNTRY_POPULATION'.
+
+    Returns:
+        pd.DataFrame: The input DataFrame with an additional column containing the population
+                      data for each country.
+    """
+    df[population_col] = df[country_col].apply(country_processor.get_population)
+    return df
+
+
 def get_city_names_mapping(
     df: pd.DataFrame,
-    city_processor: CityProcessor,
+    city_processor: CityProcessorGeoCache,
     openai_processor: OpenAIProcessor,
     city_col: str = 'COMPANY_CITY',
     country_col: str = 'GEO_COUNTRY_NAME',
@@ -71,8 +99,8 @@ def get_city_names_mapping(
     """Generate a mapping of raw city names to standardized city names, grouped by country.
 
     This function processes a DataFrame containing raw city and country data, standardizing
-    city names using `CityProcessor` for geographic validation and correction.
-    If `CityProcessor` yields a low similarity score, the OpenAI API (via `OpenAIProcessor`) is used
+    city names using `CityProcessorGeoCache` for geographic validation and correction.
+    If `CityProcessorGeoCache` yields a low similarity score, the OpenAI API (via `OpenAIProcessor`) is used
     as a fallback to infer the standardized city name. The resulting mapping is structured as:
 
         {
@@ -88,7 +116,7 @@ def get_city_names_mapping(
 
     Args:
         df (pd.DataFrame): Input DataFrame containing raw city and country information.
-        city_processor (CityProcessor): An instance of `CityProcessor` for validating and standardizing city names.
+        city_processor (CityProcessorGeoCache): An instance of `CityProcessorGeoCache` for validating and standardizing city names.
         openai_processor (OpenAIProcessor): An instance of `OpenAIProcessor` for inferring city names
                                             in ambiguous cases.
         city_col (str): The column name in the DataFrame containing raw city names.
@@ -125,7 +153,7 @@ def get_city_names_mapping(
 
 def clean_city_names(
     df: pd.DataFrame,
-    city_processor: CityProcessor,
+    city_processor: CityProcessorGeoCache,
     openai_processor: OpenAIProcessor,
     city_col: str = 'COMPANY_CITY',
     country_col: str = 'GEO_COUNTRY_NAME',
@@ -133,7 +161,7 @@ def clean_city_names(
 ) -> tuple[pd.DataFrame, pd.DataFrame]:
     """Standardize city names in a DataFrame by mapping raw city names to standardized city names.
 
-    This function uses `CityProcessor` for primary city name standardization and validation, and falls back
+    This function uses `CityProcessorGeoCache` for primary city name standardization and validation, and falls back
     to `OpenAIProcessor` for ambiguous cases. The standardized city names are added as a new column
     to the DataFrame. The mapping is performed using the `get_city_names_mapping` function to create a
     nested dictionary of country-to-city mappings, which is then applied across the rows of the DataFrame.
@@ -147,7 +175,7 @@ def clean_city_names(
 
     Args:
         df (pd.DataFrame): Input DataFrame containing raw city and country data.
-        city_processor (CityProcessor): An instance of `CityProcessor` to handle city name validation
+        city_processor (CityProcessorGeoCache): An instance of `CityProcessorGeoCache` to handle city name validation
                                          and standardization.
         openai_processor (OpenAIProcessor): An instance of `OpenAIProcessor` to infer city names
                                             in ambiguous or low-confidence cases.
@@ -197,6 +225,88 @@ def clean_city_names(
     # Convert the list of tuples into a DataFrame
     mapping_df = pd.DataFrame(rows, columns=['old_name', 'country', 'new_name'])
     return df, mapping_df
+
+
+def add_city_agglomeration(
+    df: pd.DataFrame,
+    openai_processor: OpenAIProcessor,
+    city_col: str = 'GEO_CITY_NAME',
+    state_col: str = 'COMPANY_STATE',
+    country_col: str = 'GEO_COUNTRY_NAME',
+    agglomeration_col: str = 'GEO_CITY_AGGLOMERATION',
+) -> pd.DataFrame:
+    """Add a column to a DataFrame with agglomeration data for each city.
+
+    This function uses an `OpenAIProcessor` instance to determine if each city in the DataFrame
+    belongs to a larger metropolitan area (agglomeration). The agglomeration information is added
+    as a new column in the DataFrame. If the city does not belong to an agglomeration, the city name
+    itself is returned in the new column.
+
+    Args:
+        df (pd.DataFrame): Input DataFrame containing city, state, and country data.
+        openai_processor (OpenAIProcessor): An instance of `OpenAIProcessor` used to determine
+                                            the agglomeration of a city.
+        city_col (str): The column name in the DataFrame containing city names.
+                        Default is 'GEO_CITY_NAME'.
+        state_col (str): The column name in the DataFrame containing state names (optional).
+                         Default is 'COMPANY_STATE'.
+        country_col (str): The column name in the DataFrame containing country names.
+                           Default is 'GEO_COUNTRY_NAME'.
+        agglomeration_col (str): The column name to be added for agglomeration data.
+                                 Default is 'GEO_CITY_AGGLOMERATION'.
+
+    Returns:
+        pd.DataFrame: The input DataFrame with an additional column containing agglomeration
+                      data for each city.
+    """
+
+    def map_agglomeration(row):
+        country = row[country_col]
+        state = row[state_col] if row[state_col] else None
+        city = row[city_col]
+        return openai_processor.get_agglomeration(city, country, state)
+
+    # Apply the mapping function to create a new column
+    df[agglomeration_col] = df.apply(map_agglomeration, axis=1)
+    return df
+
+
+def add_city_population(
+    df: pd.DataFrame,
+    city_processor: CityProcessorGeoCache,
+    city_col: str = 'GEO_CITY_NAME',
+    country_col: str = 'GEO_COUNTRY_NAME',
+    city_population_col: str = 'GEO_CITY_POPULATION',
+) -> pd.DataFrame:
+    """Add a population column to a DataFrame based on city and country data.
+
+    This function uses a `CityProcessorGeoCache` instance to retrieve population data for each
+    city in the DataFrame, grouped by its respective country. The population data is added
+    as a new column to the DataFrame.
+
+    Args:
+        df (pd.DataFrame): Input DataFrame containing city and country information.
+        city_processor (CityProcessorGeoCache): An instance of `CityProcessorGeoCache` used to retrieve
+                                                population data based on city and country.
+        city_col (str): The column name in the DataFrame containing city names.
+                        Default is 'GEO_CITY_NAME'.
+        country_col (str): The column name in the DataFrame containing country names.
+                           Default is 'GEO_COUNTRY_NAME'.
+        city_population_col (str): The column name to be added for city population data.
+                                   Default is 'GEO_CITY_POPULATION'.
+
+    Returns:
+        pd.DataFrame: The input DataFrame with an additional column containing population data
+                      for each city.
+    """
+
+    def map_population(row):
+        country = row[country_col]
+        city = row[city_col]
+        return city_processor.get_population(city, country)
+
+    df[city_population_col] = df.apply(map_population, axis=1)
+    return df
 
 
 def clean_postcodes(
@@ -253,25 +363,30 @@ def main(cfg: DictConfig) -> None:
     # Read the dataset
     df = pd.read_csv(data_path, converters=get_csv_converters())  # noqa: F841
     country_processor = CountryProcessor()
-    city_processor = CityProcessor()
+    city_processor = CityProcessorGeoCache()
     openai_processor = OpenAIProcessor(OpenAI())
 
     # TODO: Process the dataset
     df = clean_country_names(df, country_processor)
+    df = add_country_population(df, country_processor)
+
     df = clean_postcodes(df)
     df, df_cities = clean_city_names(
         df,
-        city_processor=city_processor,
-        openai_processor=openai_processor,
+        city_processor,
+        openai_processor,
     )
-    df_cities.to_csv(os.path.join(save_dir, 'cities.csv'))
+    df = add_city_population(df, city_processor)
+    df = add_city_agglomeration(df, openai_processor)
+
+    df_cities.to_csv(os.path.join(save_dir, 'cities.csv'), index=False)
 
     # df_country = compare_country_processing(df)
 
     # Save the clean dataset
     os.makedirs(save_dir, exist_ok=True)
     save_path = os.path.join(save_dir, 'clean.csv')  # noqa: F841
-    # df.to_csv(save_path, index=False)
+    df.to_csv(save_path, index=False)
 
     log.info('Complete')
 
