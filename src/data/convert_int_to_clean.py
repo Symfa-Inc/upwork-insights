@@ -109,7 +109,7 @@ def get_city_names_mapping(
         # Use CityProcessorGeoCache to get the standardized city name and similarity score
         cleaned_name, score = city_processor.get_similar(city, country)
         # If the similarity score is below the threshold, use OpenAI to infer the city
-        if score < 0.88:
+        if not score or score < 0.88:
             cleaned_name = openai_processor.get_city(city, country)
         # If no valid city name is found, set it to None
         if not cleaned_name:
@@ -130,7 +130,7 @@ def clean_city_names(
     city_col: str = 'COMPANY_CITY',
     country_col: str = 'GEO_COUNTRY_NAME',
     new_city_col: str = 'GEO_CITY_NAME',
-) -> pd.DataFrame:
+) -> tuple[pd.DataFrame, pd.DataFrame]:
     """Standardize city names in a DataFrame by mapping raw city names to standardized city names.
 
     This function uses `CityProcessor` for primary city name standardization and validation, and falls back
@@ -141,6 +141,9 @@ def clean_city_names(
     Additionally, the function prints statistics before and after the transformation:
     - Total count of null and non-null city names.
     - Count of unique city names.
+
+    The function also generates a DataFrame containing the mapping between raw city names and standardized
+    city names, grouped by their respective countries. This mapping can be saved or analyzed further.
 
     Args:
         df (pd.DataFrame): Input DataFrame containing raw city and country data.
@@ -153,7 +156,9 @@ def clean_city_names(
         new_city_col (str): The column name to be added to the DataFrame for standardized city names.
 
     Returns:
-        pd.DataFrame: A DataFrame with an added column (`new_city_col`) containing standardized city names.
+    tuple[pd.DataFrame, pd.DataFrame]:
+        - The updated DataFrame with an added column (`new_city_col`) containing standardized city names.
+        - A mapping DataFrame with columns `old_name`, `country`, and `new_name` for further analysis.
     """
     # Log statistics before transformation
     total_nulls_before = df[city_col].isnull().sum()
@@ -183,7 +188,15 @@ def clean_city_names(
     logging.info(f"Null city names: {total_nulls_before} -> {total_nulls_after}")
     logging.info(f"Non-null city names: {total_not_nulls_before} -> {total_not_nulls_after}")
     logging.info(f"Unique cities: {unique_cities_before} -> {unique_cities_after}")
-    return df
+    # Flatten the nested dictionary into a list of tuples
+    rows = [
+        {'old_name': old_name, 'country': country, 'new_name': new_name}
+        for country, city_dict in city_mapping.items()
+        for old_name, new_name in city_dict.items()
+    ]
+    # Convert the list of tuples into a DataFrame
+    mapping_df = pd.DataFrame(rows, columns=['old_name', 'country', 'new_name'])
+    return df, mapping_df
 
 
 def clean_postcodes(
