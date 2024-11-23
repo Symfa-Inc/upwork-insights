@@ -77,7 +77,9 @@ class CityProcessorGeoCache:
     def __init__(self, min_city_population: int = 500) -> None:
         self.gc = GeonamesCache(min_city_population=min_city_population)
         self.country_processor = CountryProcessor()
-        self.database = self._build_database()
+        self.city_data = self.gc.get_cities()
+        self.cities_database = self._build_database()
+        self.population_database = self._build_population_database()
 
     @staticmethod
     def _normalize(name: str) -> str:
@@ -88,12 +90,29 @@ class CityProcessorGeoCache:
         """Convert ISO2 country code to ISO3."""
         return self.country_processor.iso2_to_iso3[iso2]
 
+    def _build_population_database(self) -> dict[str, dict[str, int]]:
+        """Build the population database grouped by ISO3 country codes and cities."""
+        population_data: dict[str, dict[str, int]] = {}
+
+        for _, city in self.city_data.items():
+            # Convert country code to ISO3
+            iso3_country = self._convert_iso2_to_iso3(city['countrycode'])
+            if not iso3_country:
+                continue
+            # Normalize original city name
+            original_name = unidecode.unidecode(city['name'])
+            population = city['population']
+            # Check if country in the database
+            if iso3_country not in population_data:
+                population_data[iso3_country] = {}
+            population_data[iso3_country][original_name] = population
+        return population_data
+
     def _build_database(self) -> dict[str, list]:
         """Build the city database grouped by ISO3 country codes."""
-        city_data = self.gc.get_cities()
         grouped_data: dict[str, list] = {}
 
-        for _, city in city_data.items():
+        for _, city in self.city_data.items():
             # Convert country code to ISO3
             iso3_country = self._convert_iso2_to_iso3(city['countrycode'])
             if not iso3_country:
@@ -136,7 +155,7 @@ class CityProcessorGeoCache:
         """
         normalized_name = self._normalize(name)
         # Retrieve cities for the specified country
-        city_list = self.database.get(country, [])
+        city_list = self.cities_database.get(country, [])
         # Calculate similarity scores
         similarities = [
             (original_name, ratio(normalized_name, alt_name))
@@ -165,6 +184,24 @@ class CityProcessorGeoCache:
             # Sort recalculated results by similarity score in descending order
             return best_match[0].title(), best_match[1]
         return None, None
+
+    def get_population(
+        self,
+        city_name: str,
+        country: str,
+    ) -> Optional[int]:
+        """Find population for city name and country, returning the population.
+
+        This function assumes search by cleaned city names
+
+        Args:
+            city_name (str): The city name to search for.
+            country (str): The country ISO3 code to filter by.
+
+        Returns:
+            Optional[int]: Population of a city, or None if no city is found.
+        """
+        return self.population_database.get(country, {}).get(city_name, None)
 
 
 if __name__ == '__main__':
