@@ -1,4 +1,5 @@
 import os
+from typing import Optional
 
 from dotenv import load_dotenv
 from openai import OpenAI
@@ -68,21 +69,33 @@ class OpenAIProcessor:
     def get_agglomeration(
         self,
         place_name: str,
+        country_name: str,
+        state_name: Optional[str] = None,
     ) -> str:
         """Use OpenAI API to determine if a city belongs to a larger metropolitan area (agglomeration).
 
+        This function takes a city name (`place_name`), along with the country name and optionally the state name,
+        and queries the OpenAI API to determine if the city belongs to a larger metropolitan area. If it does,
+        the function returns the name of the metropolitan area (with a consistent suffix, such as 'Metropolitan Area').
+        If the city does not belong to a metropolitan area, the function returns the city name itself.
+
         Args:
-            place_name (str): The name of the city or place.
+            place_name (str): The name of the city or place to analyze.
+            country_name (str): The name of the country the city is located in.
+            state_name (Optional[str]): The name of the state or region the city is located in, if applicable.
 
         Returns:
-            str: The name of the agglomeration if the city belongs to one, or the city name itself if not.
+            str: The name of the metropolitan area if the city belongs to one, or the city name itself if not.
+                 In case of an error, a descriptive error message is returned.
         """
         prompt = (
-            f"Given the place name '{place_name}', determine if it belongs to a larger metropolitan area (agglomeration). "
+            f"Given the place name '{place_name}, {(f'{state_name}, ' if state_name else '') + country_name}', "
+            f"determine if it belongs to a larger metropolitan area (agglomeration). "
             'If the city is part of an agglomeration, respond only with the name of the agglomeration, '
-            "and ensure the response ends with 'Metropolitan Area' for consistency. "
-            'If the city is not part of any agglomeration, respond only with the name of the city itself. '
-            'Do not include any additional information or explanation in your response.'
+            "and ensure the response ends with 'Metropolitan Area' for consistency but only for metropolitan areas. "
+            'If the city is not part of any agglomeration, respond only with the name of the city itself, do not '
+            'include the state or country tags. Do not include any additional information or explanation in your '
+            'response.'
         )
 
         try:
@@ -130,5 +143,5 @@ if __name__ == '__main__':
         print(f'{place_name} -> {city}')
 
     for place_name, country in place_names:
-        agglomeration = openai_processor.get_agglomeration(place_name)
+        agglomeration = openai_processor.get_agglomeration(place_name, country)
         print(f'{place_name} -> {agglomeration}')
