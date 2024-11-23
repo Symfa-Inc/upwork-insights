@@ -95,9 +95,9 @@ if __name__ == '__main__':
         'Denmark',
         'DK',
         'DNK',
-        'Test Country',
-        'TCN',
-        'TX',
+        'Palestinian Territories',
+        'Macedonia',
+        'United States Virgin Islands',
     ]
 
     print('Country Name -> ISO3 -> Population')
