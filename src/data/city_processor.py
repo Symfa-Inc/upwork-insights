@@ -98,28 +98,24 @@ class CityProcessorGeoCache:
             iso3_country = self._convert_iso2_to_iso3(city['countrycode'])
             if not iso3_country:
                 continue
-
             # Normalize original city name
             original_name = unidecode.unidecode(city['name'])
-            postcode = city['geonameid']
-
             # Expand with alternative names if available
             alternative_names = city.get('alternatenames', [])
 
-            banned_list = ['New York']
-            if postcode in [5082331]:
-                alternative_names = list(filter(lambda x: x not in banned_list, alternative_names))
+            # This is awful crutch but I dont know how to fix it
+            if city['geonameid'] in [5082331]:
+                alternative_names = list(filter(lambda x: x not in ['New York'], alternative_names))
+            # End of crutch
 
             all_names = [
                 (self._normalize(name), original_name)
-                for name in alternative_names + [original_name, postcode]
+                for name in alternative_names + [original_name]
             ]
-
             # Add to grouped data
             if iso3_country not in grouped_data:
                 grouped_data[iso3_country] = []
             grouped_data[iso3_country].extend(all_names)
-
         return grouped_data
 
     def get_similar(
@@ -150,7 +146,6 @@ class CityProcessorGeoCache:
         filtered_results = [
             (original_name, score) for original_name, score in similarities if score > threshold
         ]
-
         # Sort results by similarity score in descending order and pick the best match
         if filtered_results:
             recalculated_scores = [
@@ -167,7 +162,6 @@ class CityProcessorGeoCache:
                 for original_name, score_alt, score_original in recalculated_scores
             ]
             best_match = sorted(combined_scores, key=lambda x: x[1], reverse=True)[0]
-
             # Sort recalculated results by similarity score in descending order
             return best_match[0].title(), best_match[1]
         return None
