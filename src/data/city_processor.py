@@ -223,10 +223,9 @@ if __name__ == '__main__':
         ('New York ', 'USA'),
         ('United States ', 'USA'),
     ]
-    for city_name, city_country in test_city_names:
-        result = city_processor.get_similar(city_name, city_country, threshold=0.8)
-        if result:
-            target_city_name = result
-            print(f'{city_name} -> {target_city_name}')
+    for src_city_name, src_country_name in test_city_names:
+        result = city_processor.get_similar(src_city_name, src_country_name, threshold=0.8)
+        if result[0] is not None:
+            print(f'{src_city_name} -> {result[0]} with a score of {result[1]:.2f}')
         else:
-            print(f'{city_name} -> No match found')
+            print(f'{src_city_name} -> No match found')
