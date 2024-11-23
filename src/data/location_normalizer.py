@@ -126,7 +126,7 @@ if __name__ == '__main__':
         ('New York', 'USA'),
         ('Boston', 'GBR'),
         ('Down Town Dubai', 'ARE'),
-        ('keysborough', 'USA'),
+        ('keysborough', 'AUS'),
         ('Running Springs', 'USA'),
         ('Hollywood', 'USA'),
         ('Woodland Hills', 'USA'),
@@ -136,12 +136,25 @@ if __name__ == '__main__':
         ('New York', 'ARG'),
         ('nova iorque', 'USA'),
     ]
+
+    # Instantiate the OpenAI client
     client = OpenAI(api_key=openai_api_key)
     openai_processor = LocationNormalizer(client)
+
+    # Validate and standardize city names
+    print('\nCity Standardization Results:')
     for place_name, country in place_names:
         city = openai_processor.get_city(place_name, country)
-        print(f'{place_name} -> {city}')
+        if city:
+            print(f'{place_name} ({country}) -> {city}')
+        else:
+            print(f'{place_name} ({country}) -> Could not standardize or invalid city')
 
+    # Determine metropolitan area (agglomeration) membership
+    print('\nAgglomeration Results:')
     for place_name, country in place_names:
         agglomeration = openai_processor.get_agglomeration(place_name, country)
-        print(f'{place_name} -> {agglomeration}')
+        if agglomeration:
+            print(f'{place_name} ({country}) -> {agglomeration}')
+        else:
+            print(f'{place_name} ({country}) -> Could not determine agglomeration')
