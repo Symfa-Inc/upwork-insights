@@ -159,6 +159,7 @@ logs/
 data/raw*/
 data/interim*/
 data/final*/
+data/clean*/
 
 # Models
 /models/*/
