@@ -414,6 +414,40 @@ def add_gdp_data(
     return df
 
 
+def calculate_experience(
+    df: pd.DataFrame,
+    join_date_col: str = 'COMPANY_CONTRACTDATE',
+    experience_col: str = 'COMPANY_EXPERIENCE',
+) -> pd.DataFrame:
+    """Calculate experience in months based on the join date column and a fixed reference date.
+
+    This function calculates the experience as the number of months between the date in the `join_date_col`
+    column and December 1, 2024. The calculated experience is stored in a new column.
+
+    Args:
+        df (pd.DataFrame): The input DataFrame containing the join date column.
+        join_date_col (str): Name of the column containing join dates. Defaults to 'CONTRACTOR_DATE'.
+        experience_col (str): Name of the column to store the calculated experience in months.
+                              Defaults to 'COMPANY_EXPERIENCE'.
+
+    Returns:
+        pd.DataFrame: The input DataFrame with the added column for experience in months.
+    """
+    # Define the reference date (December 1, 2024)
+    reference_date = pd.Timestamp('2024-12-01')
+    # Convert the join date column to datetime
+    df[join_date_col] = pd.to_datetime(df[join_date_col], errors='coerce')
+    # Calculate the experience in months
+    df[experience_col] = df[join_date_col].apply(
+        lambda x: (
+            (reference_date.year - x.year) * 12 + (reference_date.month - x.month)
+            if pd.notnull(x)
+            else None
+        ),
+    )
+    return df
+
+
 @hydra.main(
     config_path=os.path.join(PROJECT_DIR, 'configs'),
     config_name='convert_int_to_clean',
@@ -447,8 +481,11 @@ def main(cfg: DictConfig) -> None:
     df = df[df['GEO_CITY_NAME'].notna()]
     df = add_city_population(df, city_processor)
     df = add_city_agglomeration(df, location_normalizer)
-
     df_cities.to_csv(os.path.join(save_dir, 'cities.csv'), index=False)
+
+    df = calculate_experience(df)
+
+    # Drop unnecessary columns
 
     # Save the clean dataset
     os.makedirs(save_dir, exist_ok=True)
