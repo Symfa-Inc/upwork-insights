@@ -448,6 +448,14 @@ def calculate_experience(
     return df
 
 
+def clean_unnecessary_columns(
+    df: pd.DataFrame,
+    columns_to_remove: list,
+) -> pd.DataFrame:
+    """Remove unnecessary columns from a DataFrame."""
+    return df.drop(columns=[col for col in columns_to_remove if col in df.columns], errors='ignore')
+
+
 @hydra.main(
     config_path=os.path.join(PROJECT_DIR, 'configs'),
     config_name='convert_int_to_clean',
@@ -486,6 +494,10 @@ def main(cfg: DictConfig) -> None:
     df = calculate_experience(df)
 
     # Drop unnecessary columns
+    df = clean_unnecessary_columns(
+        df,
+        ['COMPANY_CONTRACTDATE', 'COMPANY_CITY', 'COMPANY_COUNTRY'],
+    )
 
     # Save the clean dataset
     os.makedirs(save_dir, exist_ok=True)
