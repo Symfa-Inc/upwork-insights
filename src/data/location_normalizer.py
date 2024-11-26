@@ -91,12 +91,10 @@ class LocationNormalizer:
         """
         prompt = (
             f"Given the place name '{place_name}, {(f'{state_name}, ' if state_name else '') + country_name}', "
-            f"determine if it belongs to a larger metropolitan area (agglomeration). "
-            'If the city is part of an agglomeration, respond only with the name of the agglomeration, '
-            "and ensure the response ends with 'Metropolitan Area' for consistency but only for metropolitan areas. "
-            'If the city is not part of any agglomeration, respond only with the name of the city itself, do not '
-            'include the state or country tags. Do not include any additional information or explanation in your '
-            'response.'
+            f"determine the **main city** of the larger metropolitan area (agglomeration) it belongs to. "
+            'If the city is part of an agglomeration, respond only with the official name of the main city of the agglomeration. '
+            'If the city is not part of any agglomeration, respond only with the official name of the city itself. '
+            'Do not include the state or country tags or any additional information.'
         )
 
         try:
@@ -115,7 +113,7 @@ class LocationNormalizer:
                 temperature=0,
             )
             agglomeration = response.choices[0].message.content.strip()
-            return agglomeration.replace('Metropolitan Area', '').strip()
+            return agglomeration
         except Exception as e:
             return f'An error occurred: {e}'
 
@@ -125,6 +123,7 @@ if __name__ == '__main__':
     # Example Usage
     place_names = [
         ('New York', 'USA'),
+        ('Jersey City', 'USA'),
         ('Boston', 'USA'),
         ('Down Town Dubai', 'ARE'),
         ('keysborough', 'AUS'),
@@ -133,7 +132,6 @@ if __name__ == '__main__':
         ('Woodland Hills', 'USA'),
         ('lakewodo', 'USA'),
         ('Moon Township', 'USA'),
-        ('London', 'IND'),
         ('New York', 'ARG'),
         ('nova iorque', 'USA'),
     ]
@@ -143,7 +141,7 @@ if __name__ == '__main__':
     openai_processor = LocationNormalizer(client)
 
     # Validate and standardize city names
-    print('\nCity Standardization Results:')
+    print('\nCity Standardization Results:\n')
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
     city_results = loop.run_until_complete(
@@ -161,7 +159,7 @@ if __name__ == '__main__':
             print(f'{place_name} ({country}) -> Could not standardize or invalid city')
 
     # Determine metropolitan area (agglomeration) membership
-    print('\nAgglomeration Results:')
+    print('\nAgglomeration Results:\n')
     agglomeration_results = loop.run_until_complete(
         asyncio.gather(
             *[
