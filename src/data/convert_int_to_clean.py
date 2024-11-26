@@ -436,18 +436,10 @@ def load_gdp_data() -> dict[str, float]:
             - Guadeloupe (GLP): 23695.0
             - Cook Islands (COK): 21994.0
         - GDP data source: https://databank.worldbank.org/reports.aspx?source=2&series=NY.GDP.MKTP.CD&country#
+        - 'TWN', 'JEY', 'UMI', 'GLP', 'COK' - Source: wikipedia
     """
-    gdp_df = pd.read_csv('data/gdp_data.csv', usecols=['Country Code', '2023 [YR2023]'])
-    # TODO: ADD THIS TO CSV
-    # these countries are not present in dataset so I add manually. Source: wikipedia
-    result = {
-        'TWN': 72485.0,
-        'JEY': 57092.0,
-        'UMI': 46381.0,
-        'GLP': 23695.0,
-        'COK': 21994.0,
-    }
-    result.update({row['Country Code']: row['2023 [YR2023]'] for _, row in gdp_df.iterrows()})
+    gdp_df = pd.read_csv('data/gdp_data.csv', usecols=['Country Code', 'GDPPC'])
+    result = {row['Country Code']: row['GDPPC'] for _, row in gdp_df.iterrows()}
     return result
 
 
