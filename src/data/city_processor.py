@@ -122,6 +122,8 @@ if __name__ == '__main__':
         ('Aarhus V', 'DNK'),
         ('LA', 'USA'),
         ('NY', 'USA'),
+        ('New York', 'USA'),
+        ('New York City', 'USA'),
         ('Киев', 'UKR'),
         ('newyork', 'USA'),
         ('New York ', 'USA'),
