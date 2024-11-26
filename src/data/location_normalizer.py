@@ -41,9 +41,9 @@ class LocationNormalizer:
         """Use OpenAI API to infer the city associated with a given place name and validate against a country tag."""
         prompt = (
             f"Given the place name '{place_name}' and the country tag '{country_tag}', "
-            'correct the city name if it is misspelled, and return only the corrected city name. '
+            'correct the city name if it is misspelled and standardize it to the **official name** as recognized globally. '
             'Ensure that the city is valid and belongs to the specified country. '
-            'If the input is incorrect or city does not exist or not is in the country, respond with an empty string. '
+            'If the input is incorrect, the city does not exist, or it is not in the specified country, respond with an empty string. '
             'Do not include any additional information or explanation in your response.'
         )
 
@@ -132,6 +132,7 @@ if __name__ == '__main__':
         ('Woodland Hills', 'USA'),
         ('lakewodo', 'USA'),
         ('Moon Township', 'USA'),
+        ('London', 'IND'),
         ('New York', 'ARG'),
         ('nova iorque', 'USA'),
     ]
