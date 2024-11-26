@@ -1,10 +1,12 @@
+import asyncio
 import logging
 import os
+from typing import Optional
 
 import hydra
 import pandas as pd
 from omegaconf import DictConfig, OmegaConf
-from openai import OpenAI
+from openai import AsyncOpenAI
 
 from src import PROJECT_DIR
 from src.data.city_processor import CityProcessor
@@ -136,26 +138,38 @@ def get_city_names_mapping(
     """
     # Extract unique combinations of city and country from the DataFrame
     unique_combinations = df[[city_col, country_col]].drop_duplicates().dropna()
-    # Initialize the result dictionary
-    result: dict[str, dict[str, str]] = {}
-    # Iterate through each unique city-country pair
+    # First loop: Process cities using CityProcessor
+    city_mapping = {}
+    low_confidence_cities = []
     for _, row in unique_combinations.iterrows():
         city = row[city_col]  # Raw city name
-        country = row[country_col]  # Raw country name
+        country = row[country_col]  # Country tag
         # Use CityProcessor to get the standardized city name and similarity score
         cleaned_name, score = city_processor.get_similar(city, country)
-        # If the similarity score is below the threshold, use OpenAI to infer the city
-        if not score or score < 0.88:
-            cleaned_name = openai_processor.get_city(city, country)
-        # If no valid city name is found, set it to None
-        if not cleaned_name:
-            cleaned_name = None
-        # Ensure the country key exists in the result dictionary
+        if score and score >= 0.88:
+            city_mapping[(city, country)] = cleaned_name
+        else:
+            low_confidence_cities.append((city, country))
+    # Second loop: Queue OpenAI requests for low-confidence cities
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    openai_requests = [
+        openai_processor.get_city(city, country) for city, country in low_confidence_cities
+    ]
+    openai_results = loop.run_until_complete(asyncio.gather(*openai_requests))
+    loop.close()
+    # Third loop: Process OpenAI responses
+    for (city, country), cleaned_name in zip(low_confidence_cities, openai_results):
+        if cleaned_name:
+            city_mapping[(city, country)] = cleaned_name
+        else:
+            city_mapping[(city, country)] = None
+    # Fourth loop: Create the nested dictionary mapping
+    result: dict[str, dict[str, str]] = {}
+    for (city, country), cleaned_name in city_mapping.items():
         if country not in result:
             result[country] = {}
-        # Map the raw city name to the cleaned name
         result[country][city] = cleaned_name
-    # Return the nested mapping of countries to their city mappings
     return result
 
 
@@ -203,10 +217,8 @@ def clean_city_names(
     # Generate the city names mapping
     city_mapping = get_city_names_mapping(
         df,
-        city_processor=city_processor,
-        openai_processor=location_normalizer,
-        city_col=city_col,
-        country_col=country_col,
+        city_processor,
+        location_normalizer,
     )
 
     # Define a mapping function
@@ -233,6 +245,51 @@ def clean_city_names(
     # Convert the list of tuples into a DataFrame
     mapping_df = pd.DataFrame(rows, columns=['old_name', 'country', 'new_name'])
     return df, mapping_df
+
+
+def map_city_agglomerations(
+    df: pd.DataFrame,
+    openai_processor: LocationNormalizer,
+    city_col: str = 'GEO_CITY_NAME',
+    state_col: str = 'COMPANY_STATE',
+    country_col: str = 'GEO_COUNTRY_NAME',
+) -> dict[tuple[str, Optional[str], str], str]:
+    """Create a mapping of unique city, state, and country combinations to their agglomerations.
+
+    Args:
+        df (pd.DataFrame): Input DataFrame containing city, state, and country data.
+        openai_processor (LocationNormalizer): An instance of `LocationNormalizer` used to determine
+                                               the agglomeration of a city.
+        city_col (str): The column name in the DataFrame containing city names. Default is 'GEO_CITY_NAME'.
+        state_col (str): The column name in the DataFrame containing state names (optional).
+                         Default is 'COMPANY_STATE'.
+        country_col (str): The column name in the DataFrame containing country names.
+                           Default is 'GEO_COUNTRY_NAME'.
+
+    Returns:
+        dict[tuple[str, Optional[str], str], str]: A mapping of (city, state, country) to agglomerations.
+    """
+    # Extract unique city, state, and country combinations
+    unique_combinations = (
+        df[[city_col, state_col, country_col]].drop_duplicates().dropna().to_records(index=False)
+    )
+    unique_combinations = [(row[0], row[1] or None, row[2]) for row in unique_combinations]
+
+    # Async function to process agglomerations
+    async def process_agglomerations():
+        tasks = [
+            openai_processor.get_agglomeration(city, country, state)
+            for city, state, country in unique_combinations
+        ]
+        results = await asyncio.gather(*tasks)
+        return dict(zip(unique_combinations, results))
+
+    # Run the async function and return the mapping
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    mapping = loop.run_until_complete(process_agglomerations())
+    loop.close()
+    return mapping
 
 
 def add_city_agglomeration(
@@ -267,15 +324,19 @@ def add_city_agglomeration(
         pd.DataFrame: The input DataFrame with an additional column containing agglomeration
                       data for each city.
     """
-
-    def map_agglomeration(row):
-        country = row[country_col]
-        state = row[state_col] if row[state_col] else None
-        city = row[city_col]
-        return openai_processor.get_agglomeration(city, country, state)
-
-    # Apply the mapping function to create a new column
-    df[agglomeration_col] = df.apply(map_agglomeration, axis=1)
+    # Create the mapping for unique city, state, and country combinations
+    mapping = map_city_agglomerations(
+        df,
+        openai_processor,
+        city_col=city_col,
+        state_col=state_col,
+        country_col=country_col,
+    )
+    # Map the agglomeration data to the DataFrame
+    df[agglomeration_col] = df.apply(
+        lambda row: mapping.get((row[city_col], row[state_col] or None, row[country_col]), None),
+        axis=1,
+    )
     return df
 
 
@@ -313,7 +374,7 @@ def add_city_population(
         city = row[city_col]
         return city_processor.get_population(city, country)
 
-    df[city_population_col] = df.apply(map_population, axis=1)
+    df.loc[city_population_col] = df.apply(map_population, axis=1)
     return df
 
 
@@ -377,6 +438,7 @@ def load_gdp_data() -> dict[str, float]:
         - GDP data source: https://databank.worldbank.org/reports.aspx?source=2&series=NY.GDP.MKTP.CD&country#
     """
     gdp_df = pd.read_csv('data/gdp_data.csv', usecols=['Country Code', '2023 [YR2023]'])
+    # TODO: ADD THIS TO CSV
     # these countries are not present in dataset so I add manually. Source: wikipedia
     result = {
         'TWN': 72485.0,
@@ -472,7 +534,7 @@ def main(cfg: DictConfig) -> None:
     df = pd.read_csv(data_path, converters=get_csv_converters())  # noqa: F841
     country_processor = CountryProcessor()
     city_processor = CityProcessor()
-    location_normalizer = LocationNormalizer(OpenAI())
+    location_normalizer = LocationNormalizer(AsyncOpenAI())
 
     # Process the dataset
     df = clean_country_names(df, country_processor)

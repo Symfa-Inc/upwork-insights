@@ -1,8 +1,9 @@
+import asyncio
 import os
 from typing import Optional
 
 from dotenv import load_dotenv
-from openai import OpenAI
+from openai import AsyncOpenAI
 
 load_dotenv()
 openai_api_key = os.getenv('OPENAI_API_KEY')
@@ -29,10 +30,10 @@ class LocationNormalizer:
             of the agglomeration. If the city does not belong to an agglomeration, returns the city name itself.
     """
 
-    def __init__(self, client: OpenAI):
+    def __init__(self, client: AsyncOpenAI):
         self.client = client
 
-    def get_city(
+    async def get_city(
         self,
         place_name: str,
         country_tag: str,
@@ -47,7 +48,7 @@ class LocationNormalizer:
         )
 
         try:
-            response = self.client.chat.completions.create(
+            response = await self.client.chat.completions.create(
                 model='gpt-4o-mini',
                 messages=[
                     {
@@ -66,7 +67,7 @@ class LocationNormalizer:
         except Exception as e:
             return f'An error occurred: {e}'
 
-    def get_agglomeration(
+    async def get_agglomeration(
         self,
         place_name: str,
         country_name: str,
@@ -99,7 +100,7 @@ class LocationNormalizer:
         )
 
         try:
-            response = self.client.chat.completions.create(
+            response = await self.client.chat.completions.create(
                 model='gpt-4o-mini',
                 messages=[
                     {
@@ -124,7 +125,7 @@ if __name__ == '__main__':
     # Example Usage
     place_names = [
         ('New York', 'USA'),
-        ('Boston', 'GBR'),
+        ('Boston', 'USA'),
         ('Down Town Dubai', 'ARE'),
         ('keysborough', 'AUS'),
         ('Running Springs', 'USA'),
@@ -138,13 +139,22 @@ if __name__ == '__main__':
     ]
 
     # Instantiate the OpenAI client
-    client = OpenAI(api_key=openai_api_key)
+    client = AsyncOpenAI()
     openai_processor = LocationNormalizer(client)
 
     # Validate and standardize city names
     print('\nCity Standardization Results:')
-    for place_name, country in place_names:
-        city = openai_processor.get_city(place_name, country)
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    city_results = loop.run_until_complete(
+        asyncio.gather(
+            *[
+                openai_processor.get_city(place_name, country)
+                for place_name, country in place_names
+            ],
+        ),
+    )
+    for (place_name, country), city in zip(place_names, city_results):
         if city:
             print(f'{place_name} ({country}) -> {city}')
         else:
@@ -152,9 +162,18 @@ if __name__ == '__main__':
 
     # Determine metropolitan area (agglomeration) membership
     print('\nAgglomeration Results:')
-    for place_name, country in place_names:
-        agglomeration = openai_processor.get_agglomeration(place_name, country)
+    agglomeration_results = loop.run_until_complete(
+        asyncio.gather(
+            *[
+                openai_processor.get_agglomeration(place_name, country)
+                for place_name, country in place_names
+            ],
+        ),
+    )
+    for (place_name, country), agglomeration in zip(place_names, agglomeration_results):
         if agglomeration:
             print(f'{place_name} ({country}) -> {agglomeration}')
         else:
             print(f'{place_name} ({country}) -> Could not determine agglomeration')
+
+    loop.close()
