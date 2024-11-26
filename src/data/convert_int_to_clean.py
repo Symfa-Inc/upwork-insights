@@ -41,9 +41,20 @@ def clean_country_names(
     df = df.loc[df[country_col].notnull()].copy()
     # Replace specific country names with standardized values
     country_replacements = {
+        # Used to clean jobs dataset
         'Palestinian Territories': 'PSE',
         'Macedonia': 'MKD',
         'United States Virgin Islands': 'VIR',
+        # Used to clean GDP dataset
+        'Czech Republic (Czechia)': 'CZE',
+        'Côte d\'Ivoire': 'CIV',
+        'DR Congo': 'COD',
+        'State of Palestine': 'PSE',
+        'Congo': 'COG',
+        'Timor-Leste': 'TLS',
+        'Saint Kitts & Nevis': 'KNA',
+        'St. Vincent & Grenadines': 'VCT',
+        'Sao Tome & Principe': 'STP',
     }
     df[country_col] = df[country_col].replace(country_replacements)
     # Get unique country values
@@ -345,6 +356,64 @@ def clean_postcodes(
     return df
 
 
+def load_gdp_data() -> dict[str, float]:
+    """Load GDP per capita data and return it as a dictionary.
+
+    This function reads a CSV file containing GDP per capita data for various countries and combines it with
+    manually added GDP values for certain countries not present in the dataset. The GDP data is mapped by
+    ISO3 country codes.
+
+    Returns:
+        dict[str, float]: A dictionary where the keys are ISO3 country codes and the values are GDP per capita
+                          (float) for the year 2023.
+
+    Notes:
+        - Manually added GDP data includes:
+            - Taiwan (TWN): 72485.0
+            - Jersey (JEY): 57092.0
+            - United States Minor Outlying Islands (UMI): 46381.0
+            - Guadeloupe (GLP): 23695.0
+            - Cook Islands (COK): 21994.0
+        - GDP data source: https://databank.worldbank.org/reports.aspx?source=2&series=NY.GDP.MKTP.CD&country#
+    """
+    gdp_df = pd.read_csv('data/gdp_data.csv', usecols=['Country Code', '2023 [YR2023]'])
+    # these countries are not present in dataset so I add manually. Source: wikipedia
+    result = {
+        'TWN': 72485.0,
+        'JEY': 57092.0,
+        'UMI': 46381.0,
+        'GLP': 23695.0,
+        'COK': 21994.0,
+    }
+    result.update({row['Country Code']: row['2023 [YR2023]'] for _, row in gdp_df.iterrows()})
+    return result
+
+
+def add_gdp_data(
+    df,
+    country_col: str = 'GEO_COUNTRY_NAME',
+    new_gdp_col: str = 'GEO_COUNTRY_GDPPC',
+) -> pd.DataFrame:
+    """Add GDP per capita data to a DataFrame based on country names or ISO3 codes.
+
+    This function maps GDP per capita data (loaded from `load_gdp_data`) to a specified country column in the
+    DataFrame and adds a new column containing the GDP per capita values.
+
+    Args:
+        df (pd.DataFrame): The input DataFrame containing country data.
+        country_col (str, optional): Name of the column in the DataFrame containing country names or ISO3 codes.
+                                     Defaults to 'GEO_COUNTRY_NAME'.
+        new_gdp_col (str, optional): Name of the new column to store GDP per capita values. Defaults to
+                                     'GEO_COUNTRY_GDPPC'.
+
+    Returns:
+        pd.DataFrame: The input DataFrame with an additional column for GDP per capita values.
+    """
+    gdp_mapping = load_gdp_data()
+    df[new_gdp_col] = df[country_col].map(gdp_mapping)
+    return df
+
+
 @hydra.main(
     config_path=os.path.join(PROJECT_DIR, 'configs'),
     config_name='convert_int_to_clean',
@@ -365,7 +434,9 @@ def main(cfg: DictConfig) -> None:
 
     # Process the dataset
     df = clean_country_names(df, country_processor)
+    df = df[df['GEO_COUNTRY_NAME'].notna()]
     df = add_country_population(df, country_processor)
+    df = add_gdp_data(df)
 
     df = clean_postcodes(df)
     df, df_cities = clean_city_names(
@@ -373,12 +444,11 @@ def main(cfg: DictConfig) -> None:
         city_processor,
         location_normalizer,
     )
+    df = df[df['GEO_CITY_NAME'].notna()]
     df = add_city_population(df, city_processor)
     df = add_city_agglomeration(df, location_normalizer)
 
     df_cities.to_csv(os.path.join(save_dir, 'cities.csv'), index=False)
-
-    # df_country = compare_country_processing(df)
 
     # Save the clean dataset
     os.makedirs(save_dir, exist_ok=True)
