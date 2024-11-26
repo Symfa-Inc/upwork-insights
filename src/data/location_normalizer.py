@@ -114,7 +114,7 @@ class LocationNormalizer:
                 temperature=0,
             )
             agglomeration = response.choices[0].message.content.strip()
-            return agglomeration
+            return agglomeration.replace('Metropolitan Area', '').strip()
         except Exception as e:
             return f'An error occurred: {e}'
 
