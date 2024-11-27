@@ -21,6 +21,11 @@ class CityProcessor:
         """Normalize a string for comparison."""
         return unidecode.unidecode(name.lower().strip())
 
+    @staticmethod
+    def normalize(name: str) -> str:
+        """Normalize city name for output."""
+        return CityProcessor._normalize(name).title()
+
     def _convert_iso2_to_iso3(self, iso2: str) -> Optional[str]:
         """Convert ISO2 country code to ISO3."""
         return self.country_processor.iso2_to_iso3.get(iso2)

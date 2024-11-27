@@ -41,10 +41,11 @@ class LocationNormalizer:
         """Use OpenAI API to infer the city associated with a given place name and validate against a country tag."""
         prompt = (
             f"Given the place name '{place_name}' and the country tag '{country_tag}', "
-            'correct the city name if it is misspelled and standardize it to the **official name** as recognized globally. '
-            'Ensure that the city is valid and belongs to the specified country. '
-            'If the input is incorrect, the city does not exist, or it is not in the specified country, respond with an empty string. '
-            'Do not include any additional information or explanation in your response.'
+            'correct the city name if it is misspelled and standardize it to the **official english name** as '
+            'recognized globally. Ensure that the city is valid and belongs to the specified country. '
+            'If the input is incorrect, the city does not exist, or it is not in the specified country, respond with '
+            'an empty string. Do not include any additional information or explanation. Return your response as a raw '
+            'string without json/markdown syntax.'
         )
 
         try:
