@@ -284,7 +284,6 @@ def map_city_agglomerations(
     # Async function to process agglomerations
     async def process_batch(batch):
         """Process a batch of requests concurrently."""
-        tasks = []
 
         async def request_with_retries(city, country, state):
             retries = 0
