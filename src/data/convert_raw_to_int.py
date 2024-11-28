@@ -78,6 +78,7 @@ def load_and_merge_datasets(cfg: DictConfig) -> pd.DataFrame:
         right_on='ID',
         how='inner',
     )
+
     # Merging datasets step-by-step
     merged_df = merge_jobs_with_work_history(jobs_df, work_history_df)
     merged_df = merge_with_companies(merged_df, companies_df)
@@ -232,13 +233,16 @@ def drop_unnecessary_columns(df: pd.DataFrame) -> None:
         'WH_COMPANYID',
         'COMPANY_RID',
         'COMPANY_LOGOURL',
+        'HOURLYENGAGEMENTDURATIONRID',
         'HOURLYENGAGEMENTDURATIONMTIME',
         'HOURLYENGAGEMENTDURATIONCTIME',
+        'HOURLYENGAGEMENTDURATIONWEEKS',
+        'HOURLYENGAGEMENTDURATIONLABEL',
         'WH_JOBUID',
         'FIXEDPRICEENGAGEMENTDURATIONID',
         'FIXEDPRICEENGAGEMENTDURATIONRID',
         'FIXEDPRICEENGAGEMENTDURATIONWEEKS',
-        'HOURLYENGAGEMENTDURATIONRID',
+        'FIXEDPRICEENGAGEMENTDURATIONLABEL',
     ]
     df.drop(columns=columns_to_drop, inplace=True)
     log.info(f'Final dataset columns: {len(df.columns)}')

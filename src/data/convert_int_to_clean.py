@@ -531,6 +531,100 @@ def calculate_experience(
     return df
 
 
+def calculate_wh_duration(df: pd.DataFrame) -> pd.DataFrame:
+    """Calculate work history duration in hours.
+
+    Calculate a new column 'WH_DURATION' based on the difference in hours between
+    'WH_STARTDATE' and 'WH_ENDDATE'. If 'WH_ENDDATE' is null, 'WH_DURATION' will remain null.
+
+    Args:
+        df (pd.DataFrame): Input dataframe containing 'WH_STARTDATE' and 'WH_ENDDATE' columns.
+
+    Returns:
+        pd.DataFrame: The updated dataframe with a new column 'WH_DURATION'.
+    """
+    # Ensure columns are datetime
+    df['WH_STARTDATE'] = pd.to_datetime(df['WH_STARTDATE'])
+    df['WH_ENDDATE'] = pd.to_datetime(df['WH_ENDDATE'])
+    # Calculate duration in hours
+    df['WH_DURATION'] = df.apply(
+        lambda row: (
+            (row['WH_ENDDATE'] - row['WH_STARTDATE']).total_seconds() / 3600
+            if pd.notnull(row['WH_ENDDATE'])
+            else None
+        ),
+        axis=1,
+    )
+    return df
+
+
+def clean_duration_label(df: pd.DataFrame) -> pd.DataFrame:
+    """Clean and consolidate engagement duration labels.
+
+    Add a new column 'ENGAGEMENTDURATIONLABEL' to the dataframe based on the logic:
+    - If JOBTYPE is 'FIXED', take the value from FIXEDPRICEENGAGEMENTDURATIONLABEL.
+    - If JOBTYPE is 'HOURLY', take the value from HOURLYENGAGEMENTDURATIONLABEL.
+
+    Args:
+        df (pd.DataFrame): Input dataframe containing JOBTYPE, HOURLYENGAGEMENTDURATIONLABEL,
+                           and FIXEDPRICEENGAGEMENTDURATIONLABEL columns.
+
+    Returns:
+        pd.DataFrame: The updated dataframe with a new column ENGAGEMENTDURATIONLABEL.
+    """
+    df['ENGAGEMENTDURATIONLABEL'] = df['OPENINGDURATION']
+    return df
+
+
+def update_engagement_type(df: pd.DataFrame) -> pd.DataFrame:
+    """Update engagement type based on job type.
+
+    Update the column HOURLYENGAGEMENTTYPE with a new column ENGAGEMENTTYPE:
+    - If JOBTYPE is 'FIXED', set ENGAGEMENTTYPE to 'project'.
+    - If JOBTYPE is 'HOURLY', set ENGAGEMENTTYPE to the value of HOURLYENGAGEMENTTYPE.
+
+    Args:
+        df (pd.DataFrame): Input dataframe containing JOBTYPE and HOURLYENGAGEMENTTYPE.
+
+    Returns:
+        pd.DataFrame: The updated dataframe with a new column ENGAGEMENTTYPE.
+    """
+    df['ENGAGEMENTTYPE'] = df.apply(
+        lambda row: 'PROJECT' if row['JOBTYPE'] == 'FIXED' else row['HOURLYENGAGEMENTTYPE'],
+        axis=1,
+    )
+    return df
+
+
+def create_budget_columns(df: pd.DataFrame) -> pd.DataFrame:
+    """Create budget min and max columns.
+
+    Create two new columns 'BUDGET_MIN' and 'BUDGET_MAX':
+    - If JOBTYPE is 'HOURLY', set values from 'HOURLYBUDGETMIN' and 'HOURLYBUDGETMAX'.
+    - If JOBTYPE is 'FIXED', set both columns to the value from 'FIXEDPRICEAMOUNT'.
+
+    Args:
+        df (pd.DataFrame): Input dataframe containing 'JOBTYPE', 'FIXEDPRICEAMOUNT',
+                           'HOURLYBUDGETMIN', and 'HOURLYBUDGETMAX'.
+
+    Returns:
+        pd.DataFrame: The updated dataframe with new columns 'Budget Min' and 'Budget Max'.
+    """
+    df['BUDGET_MIN'] = df.apply(
+        lambda row: (
+            row['FIXEDPRICEAMOUNT'] if row['JOBTYPE'] == 'FIXED' else row['HOURLYBUDGETMIN']
+        ),
+        axis=1,
+    )
+    df['BUDGET_MAX'] = df.apply(
+        lambda row: (
+            row['FIXEDPRICEAMOUNT'] if row['JOBTYPE'] == 'FIXED' else row['HOURLYBUDGETMAX']
+        ),
+        axis=1,
+    )
+    return df
+
+
 def clean_unnecessary_columns(
     df: pd.DataFrame,
     columns_to_remove: list,
@@ -557,6 +651,12 @@ def main(cfg: DictConfig) -> None:
     city_processor = CityProcessor()
     location_normalizer = LocationNormalizer(AsyncOpenAI())
 
+    df = calculate_wh_duration(df)
+    df = calculate_experience(df)
+    df = clean_duration_label(df)
+    df = update_engagement_type(df)
+    df = create_budget_columns(df)
+
     # Process the dataset
     df = clean_country_names(df, country_processor)
     df = df[df['GEO_COUNTRY_NAME'].notna()]
@@ -574,12 +674,36 @@ def main(cfg: DictConfig) -> None:
     df = add_city_agglomeration(df, location_normalizer, city_processor)
     df_cities.to_csv(os.path.join(save_dir, 'cities.csv'), index=False)
 
-    df = calculate_experience(df)
-
     # Drop unnecessary columns
     df = clean_unnecessary_columns(
         df,
-        ['COMPANY_CONTRACTDATE', 'COMPANY_CITY', 'COMPANY_COUNTRY'],
+        [
+            'COMPANY_CONTRACTDATE',
+            'COMPANY_CITY',
+            'COMPANY_COUNTRY',
+            'HOURLYENGAGEMENTTYPE',
+            'OPENINGDURATION',
+            'OPENINGHOURLYBUDGETMIN',
+            'OPENINGHOURLYBUDGETMAX',
+            'OPENINGWORKLOAD',
+            'OPENINGHOURLYBUDGETMIN',
+            'OPENINGHOURLYBUDGETMAX',
+            'OPENINGAMOUNT',
+            'FIXEDPRICEAMOUNT',
+            'HOURLYBUDGETMIN',
+            'HOURLYBUDGETMAX',
+            'APPLIED',
+            'OPENINGFREELANCERSTOHIRE',
+            'OPENINGCONTRACTORTIER',
+            'OPENINGTYPE',
+            'OPENINGHOURLYBUDGETTYPE',
+            'WH_RESPONSE_FOR_FREELANCER_FEEDBACK',
+            'WH_RESPONSE_FOR_CLIENT_FEEDBACK',
+            'WH_FEEDBACKTOCLIENTCOMMENT',
+            'WH_FEEDBACKCOMMENT',
+            'WH_STARTDATE',
+            'WH_ENDDATE',
+        ],
     )
 
     # Save the clean dataset
