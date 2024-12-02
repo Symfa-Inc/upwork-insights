@@ -4,6 +4,7 @@ import os
 from typing import Optional
 
 import hydra
+import numpy as np
 import pandas as pd
 from omegaconf import DictConfig, OmegaConf
 from openai import AsyncOpenAI
@@ -12,7 +13,7 @@ from src import PROJECT_DIR
 from src.data.city_processor import CityProcessor
 from src.data.country_processor import CountryProcessor
 from src.data.location_normalizer import LocationNormalizer
-from src.data.utils import get_csv_converters
+from src.data.utils import get_column_names_mapping, get_csv_converters
 
 log = logging.getLogger(__name__)
 log.setLevel(logging.INFO)
@@ -625,12 +626,33 @@ def create_budget_columns(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
+def calculate_hire_rate(
+    df: pd.DataFrame,
+    jobs_posted_count: str = 'COMPANY_JOBSPOSTEDCOUNT',
+    jobs_filled_count: str = 'COMPANY_JOBSFILLEDCOUNT',
+    hire_rate_col: str = 'COMPANY_HIRE_RATE',
+) -> pd.DataFrame:
+    df[hire_rate_col] = df[jobs_filled_count] / df[jobs_posted_count]
+    df[hire_rate_col] = df[hire_rate_col].replace([np.inf, -np.inf], np.nan)
+    df[hire_rate_col] = df[hire_rate_col].fillna(0)
+    df[hire_rate_col] = df[hire_rate_col].clip(lower=0, upper=1)
+    return df
+
+
 def clean_unnecessary_columns(
     df: pd.DataFrame,
     columns_to_remove: list,
 ) -> pd.DataFrame:
     """Remove unnecessary columns from a DataFrame."""
     return df.drop(columns=[col for col in columns_to_remove if col in df.columns], errors='ignore')
+
+
+def rename_features(
+    df: pd.DataFrame,
+    names_mapping: dict[str, str],
+) -> pd.DataFrame:
+    df = df.rename(columns=names_mapping)
+    return df
 
 
 @hydra.main(
@@ -650,7 +672,7 @@ def main(cfg: DictConfig) -> None:
     country_processor = CountryProcessor()
     city_processor = CityProcessor()
     location_normalizer = LocationNormalizer(AsyncOpenAI())
-
+    df = calculate_hire_rate(df)
     df = calculate_wh_duration(df)
     df = calculate_experience(df)
     df = clean_duration_label(df)
@@ -673,6 +695,9 @@ def main(cfg: DictConfig) -> None:
     df = add_city_population(df, city_processor)
     df = add_city_agglomeration(df, location_normalizer, city_processor)
     df_cities.to_csv(os.path.join(save_dir, 'cities.csv'), index=False)
+
+    df['RISINGTALENT'] = df['RISINGTALENT'].fillna(False)
+    df['RISINGTALENT'] = df['RISINGTALENT'].astype(bool)
 
     # Drop unnecessary columns
     df = clean_unnecessary_columns(
@@ -712,30 +737,46 @@ def main(cfg: DictConfig) -> None:
             'ISPREMIUM',
             'ISTOPRATED',
             'OPENINGENGAGEMENTTYPE',
+            'OPENINGTYPE',
+            'OPENINGAMOUNT',
             'OPENINGCONTRACTORTIER',
             'OPENINGFREELANCERSTOHIRE',
             'OPENINGHIDDEN',
             'OPENINGSITESOURCE',
             'OPENINGKEEPOPENONHIRE',
+            'OPENINGAUTOREVIEWSTATUS',
             'OPENINGWORKLOAD',
             'OPENINGDURATION',
+            'SITESOURCE',
+            'TOTALTIMEJOBPOSTFLOWAIV2',
+            'TOTALTIMESPENTONREVIEWPAGEAIV2',
+            'STARTTIMEJOBPOSTFLOWAIV2',
+            'SOURCINGUPDATECOUNT',
             'SOURCINGUPDATEFORBIDDEN',
+            'JOBSUCCESSSCORE',
             'LOCATIONCHECKREQUIRED',
             'COMPANYUID',
             'PARSED',
             'WH_PARSED',
             'COMPANY_URL',
             'COMPANY_ISCOMPANYVISIBLEINPROFILE',
+            'COMPANY_ISEDCREPLICATED',
             'COMPANY_STATE',
             'COMPANY_COUNTRYTIMEZONE',
             'COMPANY_OFFSETFROMUTCMILLIS',
+            'COMPANY_JOBSOPENCOUNT',
+            'COMPANY_TOTALASSIGNMENTS',
             'COMPANY_ACTIVEASSIGNMENTSCOUNT',
             'COMPANY_TOTALJOBSWITHHIRES',
             'COMPANY_ISPAYMENTMETHODVERIFIED',
             'COMPANY_PARSED',
+            'SEGMENTATION_DATA_NAME',
+            'SEGMENTATION_DATA_TYPE',
             'SEGMENTATION_DATA_SORTORDER',
         ],
     )
+
+    df = rename_features(df, get_column_names_mapping())
 
     # Save the clean dataset
     os.makedirs(save_dir, exist_ok=True)
