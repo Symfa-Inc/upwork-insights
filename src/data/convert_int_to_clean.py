@@ -13,7 +13,7 @@ from src import PROJECT_DIR
 from src.data.city_processor import CityProcessor
 from src.data.country_processor import CountryProcessor
 from src.data.location_normalizer import LocationNormalizer
-from src.data.utils import get_column_names_mapping, get_csv_converters
+from src.data.utils import DATASET_COLUMN_MAPPING, get_csv_converters
 
 log = logging.getLogger(__name__)
 log.setLevel(logging.INFO)
@@ -776,7 +776,7 @@ def main(cfg: DictConfig) -> None:
         ],
     )
 
-    df = rename_features(df, get_column_names_mapping())
+    df = rename_features(df, DATASET_COLUMN_MAPPING)
 
     # Save the clean dataset
     os.makedirs(save_dir, exist_ok=True)
