@@ -695,7 +695,6 @@ def main(cfg: DictConfig) -> None:
     df = df[df['GEO_CITY_NAME'].notna()]
     df = add_city_population(df, city_processor)
     df = add_city_agglomeration(df, location_normalizer, city_processor)
-    df_cities.to_csv(os.path.join(save_dir, 'cities.csv'), index=False)
 
     df['RISINGTALENT'] = df['RISINGTALENT'].fillna(False)
     df['RISINGTALENT'] = df['RISINGTALENT'].astype(bool)
@@ -708,8 +707,10 @@ def main(cfg: DictConfig) -> None:
 
     # Save the clean dataset
     os.makedirs(save_dir, exist_ok=True)
-    save_path = os.path.join(save_dir, 'clean.csv')  # noqa: F841
-    df.to_csv(save_path, index=False)
+    city_save_path = os.path.join(save_dir, 'cities.csv')
+    df_cities.to_csv(city_save_path, index=False)
+    data_save_path = os.path.join(save_dir, 'clean.csv')  # noqa: F841
+    df.to_csv(data_save_path, index=False)
 
     log.info('Complete')
 
