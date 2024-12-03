@@ -13,7 +13,7 @@ from src import PROJECT_DIR
 from src.data.city_processor import CityProcessor
 from src.data.country_processor import CountryProcessor
 from src.data.location_normalizer import LocationNormalizer
-from src.data.utils import DATASET_COLUMN_MAPPING, get_csv_converters
+from src.data.utils import COLUMNS_TO_REMOVE, DATASET_COLUMN_MAPPING, get_csv_converters
 
 log = logging.getLogger(__name__)
 log.setLevel(logging.INFO)
@@ -701,82 +701,9 @@ def main(cfg: DictConfig) -> None:
     df['RISINGTALENT'] = df['RISINGTALENT'].astype(bool)
 
     # Drop unnecessary columns
-    df = clean_unnecessary_columns(
-        df,
-        [
-            'COMPANY_CONTRACTDATE',
-            'COMPANY_CITY',
-            'COMPANY_COUNTRY',
-            'HOURLYENGAGEMENTTYPE',
-            'OPENINGDURATION',
-            'OPENINGHOURLYBUDGETMIN',
-            'OPENINGHOURLYBUDGETMAX',
-            'OPENINGWORKLOAD',
-            'OPENINGHOURLYBUDGETMIN',
-            'OPENINGHOURLYBUDGETMAX',
-            'OPENINGAMOUNT',
-            'FIXEDPRICEAMOUNT',
-            'HOURLYBUDGETMIN',
-            'HOURLYBUDGETMAX',
-            'APPLIED',
-            'OPENINGFREELANCERSTOHIRE',
-            'OPENINGCONTRACTORTIER',
-            'OPENINGTYPE',
-            'OPENINGHOURLYBUDGETTYPE',
-            'WH_RESPONSE_FOR_FREELANCER_FEEDBACK',
-            'WH_RESPONSE_FOR_CLIENT_FEEDBACK',
-            'WH_FEEDBACKTOCLIENTCOMMENT',
-            'WH_FEEDBACKCOMMENT',
-            'WH_STARTDATE',
-            'WH_ENDDATE',
-            # Should be deleted according to https://symfa.fibery.io/RnD/Description-360
-            'ISSTSVECTORSEARCHRESULT',
-            'CREATETIME',
-            'ENTERPRISEJOB',
-            'TOTALAPPLICANTS',
-            'OCCUPATIONENTITYSTATUS',
-            'ISPREMIUM',
-            'ISTOPRATED',
-            'OPENINGENGAGEMENTTYPE',
-            'OPENINGTYPE',
-            'OPENINGAMOUNT',
-            'OPENINGCONTRACTORTIER',
-            'OPENINGFREELANCERSTOHIRE',
-            'OPENINGHIDDEN',
-            'OPENINGSITESOURCE',
-            'OPENINGKEEPOPENONHIRE',
-            'OPENINGAUTOREVIEWSTATUS',
-            'OPENINGWORKLOAD',
-            'OPENINGDURATION',
-            'SITESOURCE',
-            'TOTALTIMEJOBPOSTFLOWAIV2',
-            'TOTALTIMESPENTONREVIEWPAGEAIV2',
-            'STARTTIMEJOBPOSTFLOWAIV2',
-            'SOURCINGUPDATECOUNT',
-            'SOURCINGUPDATEFORBIDDEN',
-            'JOBSUCCESSSCORE',
-            'LOCATIONCHECKREQUIRED',
-            'COMPANYUID',
-            'PARSED',
-            'WH_PARSED',
-            'COMPANY_URL',
-            'COMPANY_ISCOMPANYVISIBLEINPROFILE',
-            'COMPANY_ISEDCREPLICATED',
-            'COMPANY_STATE',
-            'COMPANY_COUNTRYTIMEZONE',
-            'COMPANY_OFFSETFROMUTCMILLIS',
-            'COMPANY_JOBSOPENCOUNT',
-            'COMPANY_TOTALASSIGNMENTS',
-            'COMPANY_ACTIVEASSIGNMENTSCOUNT',
-            'COMPANY_TOTALJOBSWITHHIRES',
-            'COMPANY_ISPAYMENTMETHODVERIFIED',
-            'COMPANY_PARSED',
-            'SEGMENTATION_DATA_NAME',
-            'SEGMENTATION_DATA_TYPE',
-            'SEGMENTATION_DATA_SORTORDER',
-        ],
-    )
+    df = clean_unnecessary_columns(df, columns_to_remove=COLUMNS_TO_REMOVE)
 
+    # Rename and reorder columns
     df = rename_features(df, DATASET_COLUMN_MAPPING)
 
     # Save the clean dataset
