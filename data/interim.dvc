@@ -1,6 +1,6 @@
 outs:
-- md5: 5a53ddeefefc204c92a7000004f3c22d.dir
+- md5: eda539707fe4681f8e711c0beedfc81b.dir
   size: 94355268
-  nfiles: 2
+  nfiles: 1
   hash: md5
   path: interim
