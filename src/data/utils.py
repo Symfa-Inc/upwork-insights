@@ -6,15 +6,17 @@ from typing import List, Union
 import pandas as pd
 
 DATASET_COLUMN_MAPPING = {
+    # General information
     'ID': 'id',
     'TITLE': 'title',
     'DESCRIPTION': 'description',
+    'PUBLISHTIME': 'publsih_time',
+    'PREMIUM': 'is_premium',
     'CONNECTPRICE': 'connect_price',
     'JOBTYPE': 'job_type',
     'CONTRACTORTIER': 'contractor_tier',
-    'PUBLISHTIME': 'publsih_time',
     'PERSONSTOHIRE': 'persons_to_hire',
-    'PREMIUM': 'is_premium',
+    # Job details
     'OCCUPATIONPREFLABEL': 'occupation',
     'OPENINGCOVERLETTERREQUIRED': 'is_cover_letter_required',
     'OPENINGACCESS': 'opening_access',
@@ -22,15 +24,31 @@ DATASET_COLUMN_MAPPING = {
     'OPENINGVISIBILITY': 'opening_visibility',
     'CATEGORYNAME': 'category',
     'CATEGORYGROUPNAME': 'category_group',
-    'TYPE': 'type',
+    'OCCUPATION': 'occupation',
+    'TYPE': 'job_posting_type',
+    # Device and browser
     'BROWSER': 'browser',
     'DEVICE': 'device',
+    # Skills and tags
+    'TAGS': 'tags',
+    'SKILLS': 'skills',
+    'ADDITIONAL_SKILLS': 'additional_skills',
+    # Language and proficiency
     'ENGLISHSKILL': 'english_skill',
     'ENGLISHPROFICIENCY': 'english_proficiency',
+    # Freelancer details
     'FREELANCERTYPE': 'freelancer_type',
     'RISINGTALENT': 'is_rising_talent',
     'EARNINGS': 'earnings',
+    # Geo-related fields
+    'GEO_COUNTRY_NAME': 'geo_country_name',
+    'GEO_COUNTRY_POPULATION': 'geo_country_population',
+    'GEO_COUNTRY_GDPPC': 'geo_country_gdppc',
+    'GEO_CITY_NAME': 'geo_city_name',
+    'GEO_CITY_POPULATION': 'geo_city_population',
+    'GEO_CITY_AGGLOMERATION': 'geo_city_agglomeration',
     'LOCALMARKET': 'is_local_market',
+    # Work history
     'WH_STATUS': 'wh_status',
     'WH_TOTALHOURS': 'wh_total_hours',
     'WH_FEEDBACKSCORE': 'wh_feedback_score',
@@ -38,6 +56,7 @@ DATASET_COLUMN_MAPPING = {
     'WH_TOTALCHARGE': 'wh_total_charge',
     'WH_RATEAMOUNT': 'wh_hourly_rate',
     'WH_DURATION': 'wh_duration',
+    # Company details
     'COMPANY_NAME': 'company_name',
     'COMPANY_DESCRIPTION': 'company_description',
     'COMPANY_SUMMARY': 'company_summary',
@@ -54,22 +73,14 @@ DATASET_COLUMN_MAPPING = {
     'COMPANY_CSSTIER': 'company_css_tier',
     'COMPANY_HIRE_RATE': 'company_hire_rate',
     'COMPANY_EXPERIENCE': 'company_experience',
+    # Segmentation
     'SEGMENTATION_DATA_VALUE': 'segmentation_data_value',
     'SEGMENTATION_DATA_LABEL': 'segmentation_data_label',
-    'OCCUPATION': 'occupation',
-    'ADDITIONAL_SKILLS': 'additional_skills',
-    'TAGS': 'tags',
-    'SKILLS': 'skills',
+    # Engagement details
     'ENGAGEMENTDURATIONLABEL': 'engagement_duration',
     'ENGAGEMENTTYPE': 'engagement_type',
     'BUDGET_MIN': 'budget_min',
     'BUDGET_MAX': 'budget_max',
-    'GEO_COUNTRY_NAME': 'geo_country_name',
-    'GEO_COUNTRY_POPULATION': 'geo_country_population',
-    'GEO_COUNTRY_GDPPC': 'geo_country_gdppc',
-    'GEO_CITY_NAME': 'geo_city_name',
-    'GEO_CITY_POPULATION': 'geo_city_population',
-    'GEO_CITY_AGGLOMERATION': 'geo_city_agglomeration',
 }
 
 
