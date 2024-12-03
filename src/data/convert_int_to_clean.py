@@ -649,9 +649,10 @@ def clean_unnecessary_columns(
 
 def rename_features(
     df: pd.DataFrame,
-    names_mapping: dict[str, str],
+    column_mapping: dict[str, str],
 ) -> pd.DataFrame:
-    df = df.rename(columns=names_mapping)
+    df = df.rename(columns=column_mapping)
+    df = df[column_mapping.values()]
     return df
 
 
