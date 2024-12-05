@@ -647,6 +647,14 @@ def clean_unnecessary_columns(
     return df.drop(columns=[col for col in columns_to_remove if col in df.columns], errors='ignore')
 
 
+def clean_target_values(
+    df: pd.DataFrame,
+    target_col: str = 'WH_TOTALCHARGE',
+) -> pd.DataFrame:
+    """Clean target feature from Nones."""
+    return df[df[target_col].notna()]
+
+
 def rename_features(
     df: pd.DataFrame,
     column_mapping: dict[str, str],
@@ -698,6 +706,9 @@ def main(cfg: DictConfig) -> None:
 
     df['RISINGTALENT'] = df['RISINGTALENT'].fillna(False)
     df['RISINGTALENT'] = df['RISINGTALENT'].astype(bool)
+
+    # Clean target feature from Nones
+    df = clean_target_values(df)
 
     # Drop unnecessary columns
     df = clean_unnecessary_columns(df, columns_to_remove=COLUMNS_TO_REMOVE)
