@@ -1,6 +1,6 @@
 import logging
 import os
-from typing import Dict, Optional
+from typing import Dict, Optional, Type
 
 import hydra
 import pandas as pd
@@ -25,25 +25,35 @@ def log_table_columns(
     log.info('')
 
 
-def load_and_clean_csv(filename: str, index_col: Optional[str] = None) -> pd.DataFrame:
-    """Read a CSV file, clean it by removing NaN or duplicate index values, and return a DataFrame.
+def load_and_clean_csv(
+    filename: str,
+    index_col: Optional[str] = None,
+    index_type: Optional[Type] = None,
+) -> pd.DataFrame:
+    r"""Read a CSV file, clean it by removing NaN or duplicate index values, and return a DataFrame.
 
-    This function reads a single CSV file, optionally sets an index column, and cleans the data by
-    dropping rows with NaN values in the index and duplicate entries. When duplicates exist, the most
-    recent entry is retained based on the `PARSED` column.
+    This function reads a single CSV file, optionally sets an index column, and cleans the data by:
+    - Replacing newline indicators (`\n` and `\\n`) with `None` (treated as NaN).
+    - Dropping rows with NaN values in the index.
+    - Ensuring the index has a consistent data type if specified via the `index_type` parameter.
+    - Removing duplicate entries in the index, keeping the most recent entry based on the `PARSED` column.
 
     Args:
         filename (str): Path to the CSV file to be read.
-        index_col (Optional[str]): Column name to use as the index. Defaults to None.
+        index_col (Optional[str]): Column name to use as the index. If None, no index is set. Defaults to None.
+        index_type (Optional[Type]): Data type to cast the index to (e.g., str, int). Defaults to None.
 
     Returns:
-        pd.DataFrame: A cleaned Pandas DataFrame with duplicates removed and the index set.
+        pd.DataFrame: A cleaned Pandas DataFrame with duplicates removed, NaN values handled, and the index set.
     """
     df = pd.read_csv(filename, index_col=index_col)
     # Replace \n and \\n with None (interpreted as NaN in Pandas)
     df.replace(to_replace=r'\\+N', value=None, regex=True, inplace=True)
     # Drop rows with NaN in the index
     df = df[~df.index.isnull()]
+    if index_type:
+        # Ensure index is treated with correct dtype
+        df.index = df.index.astype(index_type)
     # Remove duplicate index entries, keeping the first occurrence
     df = df.sort_values(by='PARSED').drop_duplicates(keep='last')
 
@@ -54,7 +64,7 @@ def load_and_merge_datasets(cfg: DictConfig) -> pd.DataFrame:
     """Loads and merges datasets as per the configuration."""
     jobs_df = load_and_clean_csv(cfg.files.JOBS, index_col='ID')
     work_history_df = load_and_clean_csv(cfg.files.WORK_HISTORY, index_col='JOBID')
-    companies_df = load_and_clean_csv(cfg.files.COMPANIES, index_col='UID')
+    companies_df = load_and_clean_csv(cfg.files.COMPANIES, index_col='UID', index_type=str)
     additional_skills_df = pd.read_csv(cfg.files.ADDITIONALSKILLS)
     job_tags_df = pd.read_csv(cfg.files.JOB_TAGS)
     occupations_df = pd.read_csv(cfg.files.OCCUPATIONS)
@@ -68,6 +78,7 @@ def load_and_merge_datasets(cfg: DictConfig) -> pd.DataFrame:
         right_on='ID',
         how='inner',
     )
+
     # Merging datasets step-by-step
     merged_df = merge_jobs_with_work_history(jobs_df, work_history_df)
     merged_df = merge_with_companies(merged_df, companies_df)
@@ -121,6 +132,7 @@ def merge_with_companies(
     companies_df: pd.DataFrame,
 ) -> pd.DataFrame:
     """Merges with COMPANIES table."""
+    merged_df['COMPANYUID'] = merged_df['COMPANYUID'].astype(str)
     merged_df = pd.merge(
         merged_df,
         companies_df.add_prefix('COMPANY_'),
@@ -216,11 +228,21 @@ def drop_unnecessary_columns(df: pd.DataFrame) -> None:
         'OCCUPATIONPRIMARYBROADER',
         'CATEGORYURLSLUG',
         'CATEGORYGROUPURLSLUG',
-        'COMPANYUID',
+        'COMPANYID',
         'WH_COMPANYUID',
         'WH_COMPANYID',
         'COMPANY_RID',
         'COMPANY_LOGOURL',
+        'HOURLYENGAGEMENTDURATIONRID',
+        'HOURLYENGAGEMENTDURATIONMTIME',
+        'HOURLYENGAGEMENTDURATIONCTIME',
+        'HOURLYENGAGEMENTDURATIONWEEKS',
+        'HOURLYENGAGEMENTDURATIONLABEL',
+        'WH_JOBUID',
+        'FIXEDPRICEENGAGEMENTDURATIONID',
+        'FIXEDPRICEENGAGEMENTDURATIONRID',
+        'FIXEDPRICEENGAGEMENTDURATIONWEEKS',
+        'FIXEDPRICEENGAGEMENTDURATIONLABEL',
     ]
     df.drop(columns=columns_to_drop, inplace=True)
     log.info(f'Final dataset columns: {len(df.columns)}')

@@ -1,6 +1,192 @@
+import ast
 import os
 from pathlib import Path
 from typing import List, Union
+
+import pandas as pd
+
+DATASET_COLUMN_MAPPING = {
+    # General information
+    'ID': 'id',
+    'TITLE': 'title',
+    'DESCRIPTION': 'description',
+    'PUBLISHTIME': 'publsih_time',
+    'PREMIUM': 'is_premium',
+    'CONNECTPRICE': 'connect_price',
+    'JOBTYPE': 'job_type',
+    'CONTRACTORTIER': 'contractor_tier',
+    'PERSONSTOHIRE': 'persons_to_hire',
+    # Job details
+    'OCCUPATION': 'occupation',
+    'OPENINGCOVERLETTERREQUIRED': 'is_cover_letter_required',
+    'OPENINGACCESS': 'opening_access',
+    'OPENINGFREELANCERMILESTONESALLOWED': 'is_milestones_allowed',
+    'OPENINGVISIBILITY': 'opening_visibility',
+    'CATEGORYNAME': 'category',
+    'CATEGORYGROUPNAME': 'category_group',
+    'TYPE': 'job_posting_type',
+    # Device and browser
+    'BROWSER': 'browser',
+    'DEVICE': 'device',
+    # Skills and tags
+    'TAGS': 'tags',
+    'SKILLS': 'skills',
+    'ADDITIONAL_SKILLS': 'additional_skills',
+    # Language and proficiency
+    'ENGLISHSKILL': 'english_skill',
+    'ENGLISHPROFICIENCY': 'english_proficiency',
+    # Freelancer details
+    'FREELANCERTYPE': 'freelancer_type',
+    'RISINGTALENT': 'is_rising_talent',
+    'EARNINGS': 'earnings',
+    # Geo-related fields
+    'GEO_COUNTRY_NAME': 'geo_country_name',
+    'GEO_COUNTRY_POPULATION': 'geo_country_population',
+    'GEO_COUNTRY_GDPPC': 'geo_country_gdppc',
+    'GEO_CITY_NAME': 'geo_city_name',
+    'GEO_CITY_POPULATION': 'geo_city_population',
+    'GEO_CITY_AGGLOMERATION': 'geo_city_agglomeration',
+    'LOCALMARKET': 'is_local_market',
+    # Work history
+    'WH_STATUS': 'wh_status',
+    'WH_TOTALHOURS': 'wh_total_hours',
+    'WH_FEEDBACKSCORE': 'wh_feedback_score',
+    'WH_FEEDBACKTOCLIENTSCORE': 'wh_feedback_to_client_score',
+    'WH_TOTALCHARGE': 'wh_total_charge',
+    'WH_RATEAMOUNT': 'wh_hourly_rate',
+    'WH_DURATION': 'wh_duration',
+    # Company details
+    'COMPANY_NAME': 'company_name',
+    'COMPANY_DESCRIPTION': 'company_description',
+    'COMPANY_SUMMARY': 'company_summary',
+    'COMPANY_SIZE': 'company_size',
+    'COMPANY_INDUSTRY': 'company_industry',
+    'COMPANY_VISIBLE': 'company_visible',
+    'COMPANY_JOBSPOSTEDCOUNT': 'company_jobs_posted_count',
+    'COMPANY_JOBSFILLEDCOUNT': 'company_jobs_filled_count',
+    'COMPANY_FEEDBACKCOUNT': 'company_feedback_count',
+    'COMPANY_HOURSCOUNT': 'company_hours_count',
+    'COMPANY_TOTALCHARGESAMOUNT': 'company_total_charges_amount',
+    'COMPANY_SCORE': 'company_feedback_score',
+    'COMPANY_AVGHOURLYJOBSRATEAMOUNT': 'company_avg_hourly_rate',
+    'COMPANY_CSSTIER': 'company_css_tier',
+    'COMPANY_HIRE_RATE': 'company_hire_rate',
+    'COMPANY_EXPERIENCE': 'company_experience',
+    # Segmentation
+    'SEGMENTATION_DATA_VALUE': 'segmentation_data_value',
+    'SEGMENTATION_DATA_LABEL': 'segmentation_data_label',
+    # Engagement details
+    'ENGAGEMENTDURATIONLABEL': 'engagement_duration',
+    'ENGAGEMENTTYPE': 'engagement_type',
+    'BUDGET_MIN': 'budget_min',
+    'BUDGET_MAX': 'budget_max',
+}
+
+# The list of features to be deleted is described at https://symfa.fibery.io/RnD/Description-360
+COLUMNS_TO_REMOVE = [
+    'COMPANY_CONTRACTDATE',
+    'COMPANY_CITY',
+    'COMPANY_COUNTRY',
+    'HOURLYENGAGEMENTTYPE',
+    'OPENINGDURATION',
+    'OPENINGHOURLYBUDGETMIN',
+    'OPENINGHOURLYBUDGETMAX',
+    'OPENINGWORKLOAD',
+    'OPENINGHOURLYBUDGETMIN',
+    'OPENINGHOURLYBUDGETMAX',
+    'OPENINGAMOUNT',
+    'FIXEDPRICEAMOUNT',
+    'OCCUPATIONPREFLABEL',
+    'HOURLYBUDGETMIN',
+    'HOURLYBUDGETMAX',
+    'APPLIED',
+    'OPENINGFREELANCERSTOHIRE',
+    'OPENINGCONTRACTORTIER',
+    'OPENINGTYPE',
+    'OPENINGHOURLYBUDGETTYPE',
+    'WH_RESPONSE_FOR_FREELANCER_FEEDBACK',
+    'WH_RESPONSE_FOR_CLIENT_FEEDBACK',
+    'WH_FEEDBACKTOCLIENTCOMMENT',
+    'WH_FEEDBACKCOMMENT',
+    'WH_STARTDATE',
+    'WH_ENDDATE',
+    'ISSTSVECTORSEARCHRESULT',
+    'CREATETIME',
+    'ENTERPRISEJOB',
+    'TOTALAPPLICANTS',
+    'OCCUPATIONENTITYSTATUS',
+    'ISPREMIUM',
+    'ISTOPRATED',
+    'OPENINGENGAGEMENTTYPE',
+    'OPENINGTYPE',
+    'OPENINGAMOUNT',
+    'OPENINGCONTRACTORTIER',
+    'OPENINGFREELANCERSTOHIRE',
+    'OPENINGHIDDEN',
+    'OPENINGSITESOURCE',
+    'OPENINGKEEPOPENONHIRE',
+    'OPENINGAUTOREVIEWSTATUS',
+    'OPENINGWORKLOAD',
+    'OPENINGDURATION',
+    'SITESOURCE',
+    'TOTALTIMEJOBPOSTFLOWAIV2',
+    'TOTALTIMESPENTONREVIEWPAGEAIV2',
+    'STARTTIMEJOBPOSTFLOWAIV2',
+    'SOURCINGUPDATECOUNT',
+    'SOURCINGUPDATEFORBIDDEN',
+    'JOBSUCCESSSCORE',
+    'LOCATIONCHECKREQUIRED',
+    'COMPANYUID',
+    'PARSED',
+    'WH_PARSED',
+    'COMPANY_URL',
+    'COMPANY_ISCOMPANYVISIBLEINPROFILE',
+    'COMPANY_ISEDCREPLICATED',
+    'COMPANY_STATE',
+    'COMPANY_COUNTRYTIMEZONE',
+    'COMPANY_OFFSETFROMUTCMILLIS',
+    'COMPANY_JOBSOPENCOUNT',
+    'COMPANY_TOTALASSIGNMENTS',
+    'COMPANY_ACTIVEASSIGNMENTSCOUNT',
+    'COMPANY_TOTALJOBSWITHHIRES',
+    'COMPANY_ISPAYMENTMETHODVERIFIED',
+    'COMPANY_PARSED',
+    'SEGMENTATION_DATA_NAME',
+    'SEGMENTATION_DATA_TYPE',
+    'SEGMENTATION_DATA_SORTORDER',
+]
+
+
+def safe_literal_eval(val):
+    """Safely evaluate a string to a Python literal, handling empty strings."""
+    if pd.isnull(val) or val.strip() == '':
+        return []  # Treat empty strings or NaN as empty lists
+    try:
+        return ast.literal_eval(val)
+    except (SyntaxError, ValueError):
+        return None  # Replace malformed entries with None
+
+
+def get_csv_converters() -> dict:
+    """Returns a dictionary of converters for specific columns when reading CSV files.
+
+    The converters are used to process specific columns in the CSV during loading with `pd.read_csv`.
+    For example, columns containing list-like strings can be deserialized into Python lists.
+
+    Returns:
+        dict: A dictionary where keys are column names and values are functions
+              to process the column data during CSV reading.
+
+    Example:
+        >>> converters = get_csv_converters()
+        >>> df = pd.read_csv("example.csv", converters=converters)
+    """
+    converters = {
+        'SKILLS': safe_literal_eval,
+        'TAGS': safe_literal_eval,
+        'ADDITIONAL_SKILLS': safe_literal_eval,
+    }
+    return converters
 
 
 def get_file_list(
