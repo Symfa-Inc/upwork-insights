@@ -10,7 +10,7 @@ class BaseFeatureProcessor(ABC):
         column_name (str): The name of the column to be processed.
     """
 
-    def __init__(self, column_name):
+    def __init__(self, column_name: str):
         """Initializes the processor with the column name.
 
         Args:
