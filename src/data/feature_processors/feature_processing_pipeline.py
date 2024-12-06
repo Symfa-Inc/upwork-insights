@@ -1,5 +1,7 @@
 from typing import List
 
+import pandas as pd
+
 from src.data.feature_processors.base_feature_processor import BaseFeatureProcessor
 
 
@@ -26,15 +28,15 @@ class FeatureProcessingPipeline:
         """
         self.processors.append(processor)
 
-    def execute(self, data):
-        """Executes the pipeline by applying all processors sequentially to the input data.
+    def execute(self, df: pd.DataFrame) -> pd.DataFrame:
+        """Executes the pipeline by applying all processors sequentially to the input df.
 
         Args:
-            data: The initial data to be processed.
+            df: The initial df to be processed.
 
         Returns:
-            The processed data after all processors have been applied.
+            The processed df after all processors have been applied.
         """
         for processor in self.processors:
-            data = processor.process(data)
-        return data
+            df = processor.process(df)
+        return df
