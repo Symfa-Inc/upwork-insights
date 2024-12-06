@@ -3,7 +3,7 @@ from abc import ABC, abstractmethod
 import pandas as pd
 
 
-class BaseFeatureProcessor(ABC):
+class BaseProcessor(ABC):
     """An abstract base class for feature processors, defining a structure for all feature processing classes.
 
     Attributes:

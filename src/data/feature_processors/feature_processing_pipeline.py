@@ -2,29 +2,29 @@ from typing import List
 
 import pandas as pd
 
-from src.data.feature_processors.base_feature_processor import BaseFeatureProcessor
+from src.data.feature_processors.base_processor import BaseProcessor
 
 
 class FeatureProcessingPipeline:
     """A class to define a modular pipeline for feature processing.
 
     Attributes:
-        processors (list): A list of processor objects, each inheriting from `BaseFeatureProcessor`.
+        processors (list): A list of processor objects, each inheriting from `BaseProcessor`.
     """
 
-    def __init__(self, processors: List[BaseFeatureProcessor] = None):
+    def __init__(self, processors: List[BaseProcessor] = None):
         """Initializes the pipeline with a list of processors.
 
         Args:
-            processors (List[BaseFeatureProcessor], optional): A list of processor instances to initialize the pipeline.
+            processors (List[BaseProcessor], optional): A list of processor instances to initialize the pipeline.
         """
-        self.processors: List[BaseFeatureProcessor] = processors if processors else []
+        self.processors: List[BaseProcessor] = processors if processors else []
 
-    def add_processor(self, processor: BaseFeatureProcessor) -> None:
+    def add_processor(self, processor: BaseProcessor) -> None:
         """Adds a processor to the pipeline.
 
         Args:
-            processor (BaseFeatureProcessor): A processor instance to add to the pipeline.
+            processor (BaseProcessor): A processor instance to add to the pipeline.
         """
         self.processors.append(processor)
 

@@ -1,9 +1,9 @@
 import pandas as pd
 
-from src.data.feature_processors.base_feature_processor import BaseFeatureProcessor
+from src.data.feature_processors.base_processor import BaseProcessor
 
 
-class BooleanFeatureProcessor(BaseFeatureProcessor):
+class BooleanProcessor(BaseProcessor):
     """A processor for handling and processing a column of boolean type df.
 
     This class provides functionality to clean, fill missing values,
@@ -15,11 +15,11 @@ class BooleanFeatureProcessor(BaseFeatureProcessor):
     missing values with the most frequent value (True or False).
 
     Inherits from:
-        BaseFeatureProcessor
+        BaseProcessor
     """
 
     def __init__(self, column_name: str):
-        """Initializes the BooleanFeatureProcessor with the column name.
+        """Initializes the BooleanProcessor with the column name.
 
         Args:
             column_name (str): The name of the column to be processed.
@@ -57,6 +57,6 @@ if __name__ == '__main__':
     data = pd.DataFrame(
         {'BooleanColumn': [True, np.nan, False, True, None, True, None, np.nan, False, True]},
     )
-    processor = BooleanFeatureProcessor('BooleanColumn')
+    processor = BooleanProcessor('BooleanColumn')
     processed_data = processor.process(df=data)
     print(processed_data)
