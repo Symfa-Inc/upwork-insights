@@ -1,5 +1,7 @@
 from abc import ABC, abstractmethod
 
+import pandas as pd
+
 
 class BaseFeatureProcessor(ABC):
     """An abstract base class for feature processors, defining a structure for all feature processing classes.
@@ -17,11 +19,11 @@ class BaseFeatureProcessor(ABC):
         self.column_name = column_name
 
     @abstractmethod
-    def process(self, data):
-        """Abstract method for processing data. This must be implemented by all subclasses.
+    def process(self, df: pd.DataFrame):
+        """Abstract method for processing df. This must be implemented by all subclasses.
 
         Args:
-            data (pd.DataFrame): The input DataFrame to process.
+            df (pd.DataFrame): The input DataFrame to process.
 
         Returns:
             pd.DataFrame: The processed DataFrame.
