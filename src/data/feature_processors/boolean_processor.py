@@ -4,7 +4,7 @@ from src.data.feature_processors.base_feature_processor import BaseFeatureProces
 
 
 class BooleanFeatureProcessor(BaseFeatureProcessor):
-    """A processor for handling and processing a column of boolean type data.
+    """A processor for handling and processing a column of boolean type df.
 
     This class provides functionality to clean, fill missing values,
     and ensure consistency for a specified boolean column.
@@ -26,7 +26,7 @@ class BooleanFeatureProcessor(BaseFeatureProcessor):
         """
         super().__init__(column_name)  # Initialize the base class
 
-    def process(self, data: pd.DataFrame) -> pd.DataFrame:
+    def process(self, df: pd.DataFrame) -> pd.DataFrame:
         """Method that processes boolean column.
 
         Processes the specified boolean column by replacing missing values
@@ -34,7 +34,7 @@ class BooleanFeatureProcessor(BaseFeatureProcessor):
         to a boolean type.
 
         Args:
-            data (pd.DataFrame): The input DataFrame containing the column to process.
+            df (pd.DataFrame): The input DataFrame containing the column to process.
 
         Returns:
             pd.DataFrame: The DataFrame with the processed column where:
@@ -42,8 +42,21 @@ class BooleanFeatureProcessor(BaseFeatureProcessor):
                 - The column is converted to boolean type.
         """
         # Determine the most common value (True or False)
+        # FIXME: this is a pd.Series with multiple values, and not the most frequent
         most_common = data[self.column_name] >= 0.5
+        df[self.column_name].fillna(most_common)
+        # FIXME: This doesn't work as it cannot convert float NaN or None to integer
+        df[self.column_name] = df[self.column_name].astype(int)
+        return df
 
-        data[self.column_name].fillna(most_common)
-        data[self.column_name] = data[self.column_name].astype(int)
-        return data
+
+if __name__ == '__main__':
+    # Example usage
+    import numpy as np
+
+    data = pd.DataFrame(
+        {'BooleanColumn': [True, np.nan, False, True, None, True, None, np.nan, False, True]},
+    )
+    processor = BooleanFeatureProcessor('BooleanColumn')
+    processed_data = processor.process(df=data)
+    print(processed_data)
