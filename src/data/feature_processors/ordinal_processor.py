@@ -28,7 +28,7 @@ class OrdinalProcessor(BaseProcessor):
         self.mapping = mapping
         super().__init__(column_name)  # Initialize the base class
 
-    def fit(self, df: pd.DataFrame):
+    def _fit(self, df: pd.DataFrame):
         """Fits the processor by generating a mapping of ordinal values to integers if a mapping is not provided.
 
         Args:
@@ -37,14 +37,11 @@ class OrdinalProcessor(BaseProcessor):
         Raises:
             ValueError: If the column is not found in the DataFrame.
         """
-        if self.column_name not in df.columns:
-            raise ValueError(f"Column '{self.column_name}' not found in the DataFrame.")
-
         if self.mapping is None:
             unique_values = df[self.column_name].unique()
             self.mapping = {value: i for i, value in enumerate(unique_values)}
 
-    def transform(self, df: pd.DataFrame) -> pd.DataFrame:
+    def _transform(self, df: pd.DataFrame) -> pd.DataFrame:
         """Transforms the data by mapping the ordinal values to integers using the defined or automatic mapping.
 
         Args:
@@ -56,16 +53,13 @@ class OrdinalProcessor(BaseProcessor):
         Raises:
             ValueError: If the processor has not been fitted or the column is missing.
         """
-        if self.mapping is None:
-            raise ValueError('The processor has not been fitted. Call `fit` before `transform`.')
-
-        if self.column_name not in df.columns:
-            raise ValueError(f"Column '{self.column_name}' not found in the DataFrame.")
-
         # Map values using the defined mapping
         df[self.column_name] = df[self.column_name].map(self.mapping)
 
         return df
+
+    def get_params(self) -> dict:
+        return {'mapping': self.mapping}
 
 
 if __name__ == '__main__':

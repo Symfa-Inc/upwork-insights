@@ -31,17 +31,15 @@ class BooleanProcessor(BaseProcessor):
         self.most_common = None
         super().__init__(column_name)  # Initialize the base class
 
-    def fit(self, df: pd.DataFrame):
+    def _fit(self, df: pd.DataFrame):
         """Fits the processor to the data by determining the most frequent value in the specified column.
 
         Args:
             df (pd.DataFrame): The input DataFrame to fit on.
         """
-        if self.column_name not in df.columns:
-            raise ValueError(f"Column '{self.column_name}' not found in the DataFrame.")
         self.most_common = data[self.column_name].mean() >= 0.5
 
-    def transform(self, df: pd.DataFrame) -> pd.DataFrame:
+    def _transform(self, df: pd.DataFrame) -> pd.DataFrame:
         """Transforms the data by replacing missing values with the most frequent value and converting the column to boolean type.
 
         Args:
@@ -53,15 +51,12 @@ class BooleanProcessor(BaseProcessor):
         Raises:
             ValueError: If `fit` has not been called and `most_common` is not set.
         """
-        if self.most_common is None:
-            raise ValueError('The processor has not been fitted. Call `fit` before `transform`.')
-
-        if self.column_name not in df.columns:
-            raise ValueError(f"Column '{self.column_name}' not found in the DataFrame.")
-
         df[self.column_name] = df[self.column_name].convert_dtypes().fillna(self.most_common)
         df[self.column_name] = df[self.column_name].astype(int)
         return df
+
+    def get_params(self) -> dict:
+        return {'most_common': self.most_common}
 
 
 if __name__ == '__main__':
@@ -69,7 +64,10 @@ if __name__ == '__main__':
     import numpy as np
 
     data = pd.DataFrame(
-        {'BooleanColumn': [True, np.nan, False, True, None, True, None, np.nan, False, True]},
+        {
+            '_BooleanColumn': [True, np.nan, False, True, None, True, None, np.nan, False, True],
+            'BooleanColumn': [True, np.nan, False, True, None, True, None, np.nan, False, True],
+        },
     )
     processor = BooleanProcessor('BooleanColumn')
     processed_data = processor.process(df=data)
