@@ -1,22 +1,26 @@
+from typing import Optional
+
 import pandas as pd
 
 from src.data.feature_processors.base_processor import BaseProcessor
 
 
 class BooleanProcessor(BaseProcessor):
-    """A processor for handling and processing a column of boolean type df.
+    """A processor for handling and processing a column of boolean type data.
 
     This class provides functionality to clean, fill missing values,
     and ensure consistency for a specified boolean column.
 
     Manual checks have shown that for all boolean columns in the dataset,
     there are only 5 or 6 missing (None) values in total. Therefore,
-    the most convenient and efficient way to handle it is by replacing
+    the most convenient and efficient way to handle them is by replacing
     missing values with the most frequent value (True or False).
 
     Inherits from:
         BaseProcessor
     """
+
+    most_common: Optional[bool]
 
     def __init__(self, column_name: str):
         """Initializes the BooleanProcessor with the column name.
@@ -24,28 +28,38 @@ class BooleanProcessor(BaseProcessor):
         Args:
             column_name (str): The name of the column to be processed.
         """
+        self.most_common = None
         super().__init__(column_name)  # Initialize the base class
 
-    def process(self, df: pd.DataFrame) -> pd.DataFrame:
-        """Method that processes boolean column.
-
-        Processes the specified boolean column by replacing missing values
-        with the most common value (True or False) and converting the column
-        to a boolean type.
+    def fit(self, df: pd.DataFrame):
+        """Fits the processor to the data by determining the most frequent value in the specified column.
 
         Args:
-            df (pd.DataFrame): The input DataFrame containing the column to process.
+            df (pd.DataFrame): The input DataFrame to fit on.
+        """
+        if self.column_name not in df.columns:
+            raise ValueError(f"Column '{self.column_name}' not found in the DataFrame.")
+        self.most_common = data[self.column_name].mean() >= 0.5
+
+    def transform(self, df: pd.DataFrame) -> pd.DataFrame:
+        """Transforms the data by replacing missing values with the most frequent value and converting the column to boolean type.
+
+        Args:
+            df (pd.DataFrame): The input DataFrame to transform.
 
         Returns:
-            pd.DataFrame: The DataFrame with the processed column where:
-                - Missing values are filled with the most common value.
-                - The column is converted to boolean type.
+            pd.DataFrame: The transformed DataFrame.
+
+        Raises:
+            ValueError: If `fit` has not been called and `most_common` is not set.
         """
-        # Determine the most common value (True or False)
-        # FIXME: this is a pd.Series with multiple values, and not the most frequent
-        most_common = data[self.column_name] >= 0.5
-        df[self.column_name].fillna(most_common)
-        # FIXME: This doesn't work as it cannot convert float NaN or None to integer
+        if self.most_common is None:
+            raise ValueError('The processor has not been fitted. Call `fit` before `transform`.')
+
+        if self.column_name not in df.columns:
+            raise ValueError(f"Column '{self.column_name}' not found in the DataFrame.")
+
+        df[self.column_name] = df[self.column_name].convert_dtypes().fillna(self.most_common)
         df[self.column_name] = df[self.column_name].astype(int)
         return df
 
