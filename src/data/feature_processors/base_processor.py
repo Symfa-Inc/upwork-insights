@@ -54,3 +54,12 @@ class BaseProcessor(ABC):
         """
         self.fit(df)
         return self.transform(df)
+
+    @abstractmethod
+    def get_params(self) -> dict:
+        """Abstract method to retrieve the parameters or settings of the processor.
+
+        Returns:
+            dict: A dictionary containing the processor parameters.
+        """
+        pass

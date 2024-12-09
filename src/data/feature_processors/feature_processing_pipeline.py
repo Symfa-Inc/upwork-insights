@@ -1,3 +1,4 @@
+import json
 from typing import List
 
 import pandas as pd
@@ -40,3 +41,27 @@ class FeatureProcessingPipeline:
         for processor in self.processors:
             df = processor.process(df)
         return df
+
+    def transform(self, df: pd.DataFrame) -> pd.DataFrame:
+        for processor in self.processors:
+            df = processor.transform(df)
+        return df
+
+    def generate_report(self) -> str:
+        """Generates a JSON-like report of all processors and their parameters.
+
+        Returns:
+            str: A string representation of the pipeline configuration in JSON format.
+        """
+        report = []
+        for processor in self.processors:
+            processor_info = {
+                'column_name': processor.column_name,
+                'processor_class': processor.__class__.__name__,
+                'parameters': processor.get_params(),
+            }
+            report.append(processor_info)
+
+        # Convert the report list to a JSON-like string with indentation for readability
+        json_report = json.dumps(report, indent=4)
+        return json_report
