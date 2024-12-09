@@ -3,6 +3,7 @@ import os
 from pathlib import Path
 from typing import List, Union
 
+import numpy as np
 import pandas as pd
 
 DATASET_COLUMN_MAPPING = {
@@ -187,6 +188,26 @@ def get_csv_converters() -> dict:
         'ADDITIONAL_SKILLS': safe_literal_eval,
     }
     return converters
+
+
+def extract_fitted_attributes(obj) -> dict:
+    """Extracts all fitted attributes (those ending with '_') from a scikit-learn object.
+
+    Args:
+        obj: A scikit-learn transformer or estimator.
+
+    Returns:
+        dict: A dictionary of fitted attributes and their values.
+    """
+    return {
+        attr: (
+            getattr(obj, attr).tolist()
+            if isinstance(getattr(obj, attr), np.ndarray)
+            else getattr(obj, attr)
+        )
+        for attr in dir(obj)
+        if attr.replace('__', '').endswith('_') and not attr.startswith('_')
+    }
 
 
 def get_file_list(
