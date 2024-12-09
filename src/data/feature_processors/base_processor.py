@@ -19,8 +19,32 @@ class BaseProcessor(ABC):
         self.column_name = column_name
 
     @abstractmethod
-    def process(self, df: pd.DataFrame):
-        """Abstract method for processing df. This must be implemented by all subclasses.
+    def fit(self, df: pd.DataFrame):
+        """Abstract method to fit the processor to the data.
+
+        This method should calculate and store any parameters needed for the transformation.
+
+        Args:
+            df (pd.DataFrame): The input DataFrame to fit on.
+        """
+        pass
+
+    @abstractmethod
+    def transform(self, df: pd.DataFrame) -> pd.DataFrame:
+        """Abstract method to transform the data based on the fitted processor.
+
+        This method should apply the transformation to the data.
+
+        Args:
+            df (pd.DataFrame): The input DataFrame to transform.
+
+        Returns:
+            pd.DataFrame: The transformed DataFrame.
+        """
+        pass
+
+    def process(self, df: pd.DataFrame) -> pd.DataFrame:
+        """Processes the data by first fitting the processor and then transforming the data.
 
         Args:
             df (pd.DataFrame): The input DataFrame to process.
@@ -28,4 +52,5 @@ class BaseProcessor(ABC):
         Returns:
             pd.DataFrame: The processed DataFrame.
         """
-        pass
+        self.fit(df)
+        return self.transform(df)
