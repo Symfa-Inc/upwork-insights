@@ -35,6 +35,8 @@ class BaseProcessor(ABC):
         Args:
             df (pd.DataFrame): The input DataFrame to fit on.
         """
+        if self.column_name not in df.columns:
+            raise ValueError(f"Column '{self.column_name}' not found in the DataFrame.")
         self._fit(df)
         self._is_fit = True
 
