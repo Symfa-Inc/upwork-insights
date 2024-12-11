@@ -35,10 +35,11 @@ class BaseProcessor(ABC):
         Args:
             df (pd.DataFrame): The input DataFrame to fit on.
         """
-        if self.column_name not in df.columns:
-            raise ValueError(f"Column '{self.column_name}' not found in the DataFrame.")
-        self._fit(df)
-        self._is_fit = True
+        try:
+            self._fit(df)
+            self._is_fit = True
+        except Exception as e:
+            raise RuntimeError(f"Failed to fit processor '{self.__class__.__name__}': {e}")
 
     @abstractmethod
     def _fit(self, df: pd.DataFrame) -> None:
