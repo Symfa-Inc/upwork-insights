@@ -40,7 +40,7 @@ class BooleanProcessor(BaseProcessor):
         self.most_common = data[self.column_name].mean() >= 0.5
 
     def _transform(self, df: pd.DataFrame) -> pd.DataFrame:
-        """Transforms the data by replacing missing values with the most frequent value and converting the column to boolean type.
+        """Transforms the data by replacing missing values with the most frequent value and converting the column to int type.
 
         Args:
             df (pd.DataFrame): The input DataFrame to transform.
@@ -51,8 +51,8 @@ class BooleanProcessor(BaseProcessor):
         Raises:
             ValueError: If `fit` has not been called and `most_common` is not set.
         """
-        df[self.column_name] = df[self.column_name].convert_dtypes().fillna(self.most_common)
-        df[self.column_name] = df[self.column_name].astype(int)
+        df[self.column_name] = df[self.column_name].fillna(self.most_common).astype(int)
+
         return df
 
     def get_params(self) -> dict:
