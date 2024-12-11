@@ -242,7 +242,7 @@ def get_file_list(
     return all_files
 
 
-def normalize_skill_name(skill: str):
+def normalize_to_snake_name(skill: str):
     return skill.replace(' ', '_').lower()
 
 
