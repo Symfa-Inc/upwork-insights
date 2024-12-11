@@ -38,7 +38,9 @@ class OrdinalProcessor(BaseProcessor):
             ValueError: If the column is not found in the DataFrame.
         """
         if self.mapping is None:
-            unique_values = df[self.column_name].unique()
+            # unique_values = df[self.column_name].unique()
+            # TODO: check if this is correct
+            unique_values = df[self.column_name].dropna().unique()  # Exclude missing values
             self.mapping = {value: i for i, value in enumerate(unique_values)}
 
     def _transform(self, df: pd.DataFrame) -> pd.DataFrame:
@@ -54,7 +56,9 @@ class OrdinalProcessor(BaseProcessor):
             ValueError: If the processor has not been fitted or the column is missing.
         """
         # Map values using the defined mapping
-        df[self.column_name] = df[self.column_name].map(self.mapping)
+        # df[self.column_name] = df[self.column_name].map(self.mapping)
+        # TODO: check if this is correct
+        df[self.column_name] = df[self.column_name].map(self.mapping).fillna(-1).astype(int)
 
         return df
 
