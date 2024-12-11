@@ -7,7 +7,7 @@ from src.data.feature_processors.base_processor import BaseProcessor
 from src.data.utils import normalize_skill_name
 
 
-class ListFeatureProcessor(BaseProcessor):
+class ListProcessor(BaseProcessor):
     """A processor for handling and transforming list features (e.g., skills) into one-hot encoded features.
 
     Attributes:
@@ -110,13 +110,13 @@ if __name__ == '__main__':
         },
     )
 
-    processor = ListFeatureProcessor(column_name='skills')
+    processor = ListProcessor(column_name='skills')
     processor.fit(data)
     transformed_data = processor.transform(data)
 
     print(transformed_data)
 
-    processor = ListFeatureProcessor(column_name='skills', min_frequency=3)
+    processor = ListProcessor(column_name='skills', min_frequency=3)
     processor.fit(data)
     transformed_data = processor.transform(data)
     print(transformed_data)
