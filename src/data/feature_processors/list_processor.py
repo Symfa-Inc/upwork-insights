@@ -4,7 +4,7 @@ from typing import List, Optional, Set
 import pandas as pd
 
 from src.data.feature_processors.base_processor import BaseProcessor
-from src.data.utils import normalize_skill_name
+from src.data.utils import normalize_to_snake_name
 
 
 class ListProcessor(BaseProcessor):
@@ -97,7 +97,7 @@ class ListProcessor(BaseProcessor):
 
         # Create binary columns for each unique value
         for value in self.unique_values:
-            one_hot_columns[f"{self.column_name}_{normalize_skill_name(value)}"] = df[
+            one_hot_columns[f"{self.column_name}_{normalize_to_snake_name(value)}"] = df[
                 self.column_name
             ].apply(
                 lambda x: int(value in x) if isinstance(x, list) else 0,
