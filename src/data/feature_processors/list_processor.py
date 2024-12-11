@@ -60,26 +60,29 @@ class ListProcessor(BaseProcessor):
         Returns:
             pd.DataFrame: The transformed DataFrame with one-hot encoded features.
         """
-        # Initialize one-hot encoded DataFrame
-        encoded_df = pd.DataFrame(index=df.index)
+        # Dictionary to store all new columns
+        one_hot_columns = {}
 
+        # Create binary columns for each unique value
         for value in self.unique_values:
-            # Create a binary column for each unique value
-            encoded_df[f"{self.column_name}_{normalize_skill_name(value)}"] = df[
+            one_hot_columns[f"{self.column_name}_{normalize_skill_name(value)}"] = df[
                 self.column_name
             ].apply(
-                lambda x: int(value in x) if x else 0,
+                lambda x: int(value in x) if isinstance(x, list) else 0,
             )
 
-        # Handle "others" category if min_frequency is provided
+        # Handle "others" category as count if min_frequency is provided
         if self.min_frequency:
-            encoded_df[f"{self.column_name}_others"] = df[self.column_name].apply(
+            one_hot_columns[f"{self.column_name}_others"] = df[self.column_name].apply(
                 lambda x: (
                     sum(1 for item in x if item not in self.unique_values)
                     if isinstance(x, list)
                     else 0
                 ),
             )
+
+        # Combine all one-hot columns into a new DataFrame
+        encoded_df = pd.DataFrame(one_hot_columns, index=df.index)
 
         return encoded_df
 
