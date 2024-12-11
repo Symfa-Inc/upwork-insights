@@ -1,5 +1,5 @@
 from collections import Counter
-from typing import List, Optional
+from typing import Optional, Set
 
 import pandas as pd
 
@@ -12,22 +12,24 @@ class ListProcessor(BaseProcessor):
 
     Attributes:
         column_name (str): The name of the column to process.
-        min_frequency (Optional[int]): Minimum frequency for including a skill as a separate feature.
+        threshold (Optional[float]): Cumulative coverage threshold for including skills in one-hot encoding.
             Skills with frequency below this threshold are grouped into the "others" category.
         unique_values (Optional[List[str]]): List of unique values to include in one-hot encoding,
             determined during fitting.
     """
 
-    def __init__(self, column_name: str, min_frequency: Optional[int] = None):
+    def __init__(self, column_name: str, threshold: Optional[float] = None):
         """Initializes the ListFeatureProcessor with a column name and optional frequency threshold.
 
         Args:
             column_name (str): The name of the column to process.
-            min_frequency (Optional[int]): Minimum frequency for including a skill as a separate feature.
+            threshold (Optional[float]): Cumulative coverage threshold for including skills in one-hot encoding.
                 Skills with frequency below this threshold are grouped into the "others" category.
         """
-        self.min_frequency = min_frequency
-        self.unique_values: Optional[List[str]] = None
+        if threshold is not None and not 0 <= threshold <= 1:
+            raise ValueError('threshold must be a float between 0 and 1, inclusive.')
+        self.threshold = threshold
+        self.unique_values: Optional[Set[str]] = None
         super().__init__(column_name)
 
     def _fit(self, df: pd.DataFrame):
@@ -43,13 +45,38 @@ class ListProcessor(BaseProcessor):
         all_values = [item for sublist in df[self.column_name].dropna() for item in sublist]
         value_counts = Counter(all_values)
 
-        # Filter unique values based on the min_frequency threshold
-        if self.min_frequency:
-            self.unique_values = [
-                value for value, count in value_counts.items() if count >= self.min_frequency
-            ]
-        else:
-            self.unique_values = list(value_counts.keys())
+        # Sort skills by frequency (most frequent first)
+        sorted_skills = sorted(value_counts.items(), key=lambda x: x[1], reverse=True)
+
+        # Calculate cumulative coverage dynamically
+        total_rows = len(df)
+        selected_skills = set()
+
+        # Iteratively add skills and recalculate coverage
+        for skill, count in sorted_skills:
+            if self.threshold is not None:
+                # Add the skill to the selected set
+                selected_skills.add(skill)
+
+                # Recalculate coverage
+                covered_rows = (
+                    df[self.column_name]
+                    .apply(
+                        lambda x: any(item in selected_skills for item in x) if x else False,
+                    )
+                    .sum()
+                )
+                cumulative_coverage = covered_rows / total_rows
+
+                # Stop if coverage exceeds the threshold
+                if cumulative_coverage >= self.threshold:
+                    break
+
+            else:
+                selected_skills.add(skill)
+
+        # Save the unique values to include in one-hot encoding
+        self.unique_values = set(selected_skills)
 
     def _transform(self, df: pd.DataFrame) -> pd.DataFrame:
         """Transforms the data by one-hot encoding the list feature and adding an "others" category if applicable.
@@ -72,7 +99,7 @@ class ListProcessor(BaseProcessor):
             )
 
         # Handle "others" category as count if min_frequency is provided
-        if self.min_frequency:
+        if self.threshold:
             one_hot_columns[f"{self.column_name}_others"] = df[self.column_name].apply(
                 lambda x: (
                     sum(1 for item in x if item not in self.unique_values)
@@ -94,7 +121,7 @@ class ListProcessor(BaseProcessor):
         """
         return {
             'column_name': self.column_name,
-            'min_frequency': self.min_frequency,
+            'threshold': self.threshold,
             'unique_values': self.unique_values,
         }
 
@@ -119,7 +146,7 @@ if __name__ == '__main__':
 
     print(transformed_data)
 
-    processor = ListProcessor(column_name='skills', min_frequency=3)
+    processor = ListProcessor(column_name='skills', threshold=0.5)
     processor.fit(data)
     transformed_data = processor.transform(data)
     print(transformed_data)
