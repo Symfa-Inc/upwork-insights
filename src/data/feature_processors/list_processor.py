@@ -1,5 +1,5 @@
 from collections import Counter
-from typing import Optional, Set
+from typing import List, Optional, Set
 
 import pandas as pd
 
@@ -30,6 +30,7 @@ class ListProcessor(BaseProcessor):
             raise ValueError('threshold must be a float between 0 and 1, inclusive.')
         self.threshold = threshold
         self.unique_values: Optional[Set[str]] = None
+        self.cumulative_proportions: Optional[List[float]] = None
         super().__init__(column_name)
 
     def _fit(self, df: pd.DataFrame):
@@ -52,6 +53,9 @@ class ListProcessor(BaseProcessor):
         total_rows = len(df)
         selected_skills = set()
 
+        if self.threshold is not None:
+            self.cumulative_proportions = []
+
         # Iteratively add skills and recalculate coverage
         for skill, count in sorted_skills:
             if self.threshold is not None:
@@ -67,6 +71,7 @@ class ListProcessor(BaseProcessor):
                     .sum()
                 )
                 cumulative_coverage = covered_rows / total_rows
+                self.cumulative_proportions.append(cumulative_coverage)
 
                 # Stop if coverage exceeds the threshold
                 if cumulative_coverage >= self.threshold:
@@ -123,6 +128,7 @@ class ListProcessor(BaseProcessor):
             'column_name': self.column_name,
             'threshold': self.threshold,
             'unique_values': self.unique_values,
+            'cumulative_proportions': self.cumulative_proportions,
         }
 
 
@@ -146,7 +152,7 @@ if __name__ == '__main__':
 
     print(transformed_data)
 
-    processor = ListProcessor(column_name='skills', threshold=0.5)
+    processor = ListProcessor(column_name='skills', threshold=0.7)
     processor.fit(data)
     transformed_data = processor.transform(data)
     print(transformed_data)
