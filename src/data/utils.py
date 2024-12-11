@@ -184,8 +184,11 @@ def get_csv_converters() -> dict:
     """
     converters = {
         'SKILLS': safe_literal_eval,
+        'skills': safe_literal_eval,
         'TAGS': safe_literal_eval,
+        'tags': safe_literal_eval,
         'ADDITIONAL_SKILLS': safe_literal_eval,
+        'additional_skills': safe_literal_eval,
     }
     return converters
 
@@ -237,6 +240,10 @@ def get_file_list(
                     all_files.append(file_path)
     all_files.sort()
     return all_files
+
+
+def normalize_skill_name(skill: str):
+    return skill.replace(' ', '_').lower()
 
 
 if __name__ == '__main__':
