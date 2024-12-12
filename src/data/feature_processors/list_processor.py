@@ -18,7 +18,7 @@ class ListProcessor(BaseProcessor):
             determined during fitting.
     """
 
-    def __init__(self, column_name: str, threshold: Optional[float] = None):
+    def __init__(self, column_name: str, threshold: float = 0.8):
         """Initializes the ListFeatureProcessor with a column name and optional frequency threshold.
 
         Args:
@@ -30,7 +30,7 @@ class ListProcessor(BaseProcessor):
             raise ValueError('threshold must be a float between 0 and 1, inclusive.')
         self.threshold = threshold
         self.unique_values: Optional[Set[str]] = None
-        self.cumulative_proportions: Optional[List[float]] = None
+        self.cumulative_ratio: Optional[List[float]] = None
         super().__init__(column_name)
 
     def _fit(self, df: pd.DataFrame):
@@ -46,42 +46,21 @@ class ListProcessor(BaseProcessor):
         all_values = [item for sublist in df[self.column_name].dropna() for item in sublist]
         value_counts = Counter(all_values)
 
-        # Sort skills by frequency (most frequent first)
-        sorted_skills = sorted(value_counts.items(), key=lambda x: x[1], reverse=True)
+        # Convert to a DataFrame for processing
+        df_value = pd.DataFrame(value_counts.items(), columns=['value', 'frequency'])
+        df_value = df_value.sort_values(by='frequency', ascending=False).reset_index(drop=True)
 
-        # Calculate cumulative coverage dynamically
-        total_rows = len(df)
-        selected_skills = set()
+        # Calculate cumulative ratio
+        total_frequency = df_value['frequency'].sum()
+        df_value['ratio'] = df_value['frequency'] / total_frequency
+        df_value['cumulative_ratio'] = df_value['ratio'].cumsum()
 
-        if self.threshold is not None:
-            self.cumulative_proportions = []
-
-        # Iteratively add skills and recalculate coverage
-        for skill, count in sorted_skills:
-            if self.threshold is not None:
-                # Add the skill to the selected set
-                selected_skills.add(skill)
-
-                # Recalculate coverage
-                covered_rows = (
-                    df[self.column_name]
-                    .apply(
-                        lambda x: any(item in selected_skills for item in x) if x else False,
-                    )
-                    .sum()
-                )
-                cumulative_coverage = covered_rows / total_rows
-                self.cumulative_proportions.append(cumulative_coverage)
-
-                # Stop if coverage exceeds the threshold
-                if cumulative_coverage >= self.threshold:
-                    break
-
-            else:
-                selected_skills.add(skill)
-
-        # Save the unique values to include in one-hot encoding
-        self.unique_values = set(selected_skills)
+        # Select skills based on threshold
+        threshold_index = df_value[df_value['cumulative_ratio'] >= self.threshold].index[0]
+        selected_values = df_value.loc[:threshold_index, 'value']
+        self.unique_values = set(selected_values)
+        self.ratio = df_value.loc[:threshold_index, 'ratio'].tolist()
+        self.cumulative_ratio = df_value.loc[:threshold_index, 'cumulative_ratio'].tolist()
 
     def _transform(self, df: pd.DataFrame) -> pd.DataFrame:
         """Transforms the data by one-hot encoding the list feature and adding an "others" category if applicable.
@@ -128,7 +107,8 @@ class ListProcessor(BaseProcessor):
             'column_name': self.column_name,
             'threshold': self.threshold,
             'unique_values': self.unique_values,
-            'cumulative_proportions': self.cumulative_proportions,
+            'ratio': self.ratio,
+            'cumulative_ratio': self.cumulative_ratio,
         }
 
 
@@ -146,16 +126,9 @@ if __name__ == '__main__':
         },
     )
 
-    processor = ListProcessor(column_name='skills')
-    processor.fit(data)
-    transformed_data = processor.transform(data)
-
-    print(transformed_data)
-
-    processor = ListProcessor(column_name='skills', threshold=0.7)
+    processor = ListProcessor(column_name='skills', threshold=0.8)
     processor.fit(data)
     transformed_data = processor.transform(data)
     print(transformed_data)
-
     print('\nProcessor Parameters:')
     print(processor.get_params())
