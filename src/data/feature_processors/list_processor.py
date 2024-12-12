@@ -84,7 +84,7 @@ class ListProcessor(BaseProcessor):
 
         # Handle "others" category as count if min_frequency is provided
         if self.threshold:
-            one_hot_columns[f"{self.column_name}_others"] = df[self.column_name].apply(
+            one_hot_columns[f"{self.column_name}_other"] = df[self.column_name].apply(
                 lambda x: (
                     sum(1 for item in x if item not in self.unique_values)
                     if isinstance(x, list)
@@ -115,7 +115,7 @@ class ListProcessor(BaseProcessor):
 if __name__ == '__main__':
     data = pd.DataFrame(
         {
-            'skills': [
+            'skill': [
                 ['Python', 'SQL', 'Pandas'],
                 ['Python', 'Java', 'C++'],
                 ['Python', 'R', 'Statistics'],
