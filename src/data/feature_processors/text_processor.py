@@ -6,7 +6,7 @@ from dotenv import load_dotenv
 from openai import OpenAI
 from sklearn.base import TransformerMixin
 from sklearn.decomposition import PCA
-from sklearn.preprocessing import MinMaxScaler, StandardScaler
+from sklearn.preprocessing import StandardScaler
 
 from src.data.feature_processors.base_processor import BaseProcessor
 from src.data.utils import extract_fitted_attributes
@@ -101,25 +101,18 @@ class TextProcessor(BaseProcessor):
             self.scaler = self.scaler_class()
             embeddings = self.scaler.fit_transform(embeddings)
 
-        # Apply PCA
+        # Initial PCA fit to compute explained variance
         self.pca = PCA()
         self.pca.fit(embeddings)
-
-        # Filter principal components to meet the explained variance threshold
         cumulative_variance = np.cumsum(self.pca.explained_variance_ratio_)
+
+        # Select the optimal number of components
         n_components = np.argmax(cumulative_variance >= self.pca_threshold) + 1
 
-        # DONE: check if direct reduction of the PCA components is more optimal
-        # This reduction is not more optimal, it should be the same. I do it by refitting PCA because I think it is
-        # bad idea to manually change private parameters. Yes it is technically slower, but insignificantly.
-
-        # # Directly reduce the PCA components to the desired number
-        # # self.pca.components_ = self.pca.components_[:n_components]
-        # # self.pca.explained_variance_ratio_ = self.pca.explained_variance_ratio_[:n_components]
-        # # self.pca.n_components_ = n_components
         # Refit PCA with the optimal number of components
-        self.pca = PCA(n_components=n_components)
-        self.pca.fit(embeddings)
+        if n_components < embeddings.shape[1]:
+            self.pca = PCA(n_components=n_components)
+            self.pca.fit(embeddings)
 
     def _transform(self, df: pd.DataFrame) -> pd.DataFrame:
         """Transforms the data by generating embeddings, scaling them, and applying PCA.
@@ -185,8 +178,8 @@ if __name__ == '__main__':
 
     processor = TextProcessor(
         column_name='text_column',
-        pca_threshold=0.90,  # 90% explained variance
-        scaler_class=MinMaxScaler,
+        pca_threshold=0.80,
+        scaler_class=None,
     )
 
     # Transform the data
