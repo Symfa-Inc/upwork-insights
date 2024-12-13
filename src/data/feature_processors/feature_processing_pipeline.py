@@ -4,6 +4,8 @@ from typing import List
 import pandas as pd
 
 from src.data.feature_processors.base_processor import BaseProcessor
+from src.data.feature_processors.boolean_processor import BooleanProcessor
+from src.data.feature_processors.ordinal_processor import OrdinalProcessor
 
 
 class FeatureProcessingPipeline:
@@ -65,3 +67,23 @@ class FeatureProcessingPipeline:
         # Convert the report list to a JSON-like string with indentation for readability
         json_report = json.dumps(report, indent=4)
         return json_report
+
+
+if __name__ == '__main__':
+    # Example usage
+    boolean_processor = BooleanProcessor(column_name='boolean_col')
+    ordinal_processor = OrdinalProcessor(column_name='ordinal_col')
+    pipeline = FeatureProcessingPipeline()
+    pipeline.add_processor(boolean_processor)
+    pipeline.add_processor(ordinal_processor)
+
+    # Sample DataFrame
+    data = pd.DataFrame(
+        {
+            'boolean_col': [True, False, True, None],
+            'ordinal_col': ['low', 'medium', 'high', None],
+        },
+    )
+
+    processed_data = pipeline.execute(data)
+    print(processed_data)
