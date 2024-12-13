@@ -6,7 +6,6 @@ from dotenv import load_dotenv
 from openai import OpenAI
 from sklearn.base import TransformerMixin
 from sklearn.decomposition import PCA
-from sklearn.preprocessing import StandardScaler
 
 from src.data.feature_processors.base_processor import BaseProcessor
 from src.data.utils import extract_fitted_attributes
@@ -35,14 +34,14 @@ class TextProcessor(BaseProcessor):
         self,
         column_name: str,
         pca_threshold: float = 0.85,
-        scaler_class: Optional[Type[TransformerMixin]] = StandardScaler,
+        scaler_class: Optional[Type[TransformerMixin]] = None,
     ):
         """Initializes the TextProcessor with OpenAI client, PCA threshold, and optional scaler.
 
         Args:
             column_name (str): The name of the column to process.
             pca_threshold (float): Explained variance ratio threshold for PCA.
-            scaler_class (Optional[Type[TransformerMixin]]): Scaler class to normalize data. Defaults to StandardScaler.
+            scaler_class (Optional[Type[TransformerMixin]]): Scaler class to normalize data. Defaults to None.
 
         Raises:
             ValueError: If `pca_threshold` is not between 0 and 1.
