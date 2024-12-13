@@ -37,7 +37,7 @@ class BooleanProcessor(BaseProcessor):
         Args:
             df (pd.DataFrame): The input DataFrame to fit on.
         """
-        self.most_common = data[self.column_name].mean() >= 0.5
+        self.most_common = df[self.column_name].mean() >= 0.5
 
     def _transform(self, df: pd.DataFrame) -> pd.DataFrame:
         """Transforms the data by replacing missing values with the most frequent value and converting the column to int type.
