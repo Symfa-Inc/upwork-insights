@@ -20,12 +20,12 @@ class TextProcessor(BaseProcessor):
         column_name (str): The name of the column to process.
         pca_threshold (float): Explained variance ratio threshold for PCA.
         openai_client (OpenAI): The OpenAI client used to generate embeddings.
-        scaler (Optional[TransformerMixin]): Scaler instance to normalize data, defaults to StandardScaler.
+        scaler (Optional[TransformerMixin]): Scaler instance to normalize data, defaults to None.
         pca (Optional[PCA]): PCA instance, fitted during the `fit` method.
     """
 
     openai_client: OpenAI
-    scaler_class: Optional[Type[TransformerMixin]]
+    scaling_method: Optional[Type[TransformerMixin]]
     pca_threshold: float
     pca: Optional[PCA]
     scaler: Optional[TransformerMixin]
@@ -34,14 +34,14 @@ class TextProcessor(BaseProcessor):
         self,
         column_name: str,
         pca_threshold: float = 0.85,
-        scaler_class: Optional[Type[TransformerMixin]] = None,
+        scaling_method: Optional[Type[TransformerMixin]] = None,
     ):
         """Initializes the TextProcessor with OpenAI client, PCA threshold, and optional scaler.
 
         Args:
             column_name (str): The name of the column to process.
             pca_threshold (float): Explained variance ratio threshold for PCA.
-            scaler_class (Optional[Type[TransformerMixin]]): Scaler class to normalize data. Defaults to None.
+            scaling_method (Optional[Type[TransformerMixin]]): Scaling method to normalize data. Defaults to None.
 
         Raises:
             ValueError: If `pca_threshold` is not between 0 and 1.
@@ -55,7 +55,7 @@ class TextProcessor(BaseProcessor):
         self.pca = None  # PCA instance will be initialized during `fit`
         self.scaler = None  # Scaler instance will be initialized during `fit`
 
-        self.scaler_class = scaler_class
+        self.scaling_method = scaling_method
 
         # Call parent class initializer
         super().__init__(column_name)
@@ -96,8 +96,8 @@ class TextProcessor(BaseProcessor):
         embeddings = self._get_embeddings(df[self.column_name].tolist())
 
         # Scale embeddings
-        if self.scaler_class:
-            self.scaler = self.scaler_class()
+        if self.scaling_method:
+            self.scaler = self.scaling_method()
             embeddings = self.scaler.fit_transform(embeddings)
 
         # Initial PCA fit to compute explained variance
@@ -177,8 +177,8 @@ if __name__ == '__main__':
 
     processor = TextProcessor(
         column_name='text_column',
-        pca_threshold=0.80,
-        scaler_class=None,
+        pca_threshold=0.85,
+        scaling_method=None,
     )
 
     # Transform the data
