@@ -26,7 +26,7 @@ class OrdinalProcessor(BaseProcessor):
             mapping (Optional[Dict]): Optional mapping of ordinal values to integers.
         """
         self.mapping = mapping
-        super().__init__(column_name)  # Initialize the base class
+        super().__init__(column_name)
 
     def _fit(self, df: pd.DataFrame):
         """Fits the processor by generating a mapping of ordinal values to integers if a mapping is not provided.
@@ -38,8 +38,6 @@ class OrdinalProcessor(BaseProcessor):
             ValueError: If the column is not found in the DataFrame.
         """
         if self.mapping is None:
-            # unique_values = df[self.column_name].unique()
-            # TODO: check if this is correct
             unique_values = df[self.column_name].dropna().unique()  # Exclude missing values
             self.mapping = {value: i for i, value in enumerate(unique_values)}
 
@@ -56,8 +54,6 @@ class OrdinalProcessor(BaseProcessor):
             ValueError: If the processor has not been fitted or the column is missing.
         """
         # Map values using the defined mapping
-        # df[self.column_name] = df[self.column_name].map(self.mapping)
-        # TODO: check if this is correct
         df[self.column_name] = df[self.column_name].map(self.mapping).fillna(-1).astype(int)
 
         return df
