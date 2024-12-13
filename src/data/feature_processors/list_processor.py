@@ -18,7 +18,7 @@ class ListProcessor(BaseProcessor):
             determined during fitting.
     """
 
-    def __init__(self, column_name: str, threshold: float = 0.8):
+    def __init__(self, column_name: str, threshold: Optional[float] = None):
         """Initializes the ListFeatureProcessor with a column name and optional frequency threshold.
 
         Args:
@@ -55,6 +55,13 @@ class ListProcessor(BaseProcessor):
         df_value['ratio'] = df_value['frequency'] / total_frequency
         df_value['cumulative_ratio'] = df_value['ratio'].cumsum()
 
+        # Select all skills if threshold is not set
+        if self.threshold is None:
+            self.unique_values = set(value_counts.keys())
+            self.ratio = df_value['ratio'].tolist()
+            self.cumulative_ratio = df_value['cumulative_ratio'].tolist()
+            return
+
         # Select skills based on threshold
         threshold_index = df_value[df_value['cumulative_ratio'] >= self.threshold].index[0]
         selected_values = df_value.loc[:threshold_index, 'value']
@@ -79,17 +86,17 @@ class ListProcessor(BaseProcessor):
             one_hot_columns[f"{self.column_name}_{normalize_to_snake_name(value)}"] = df[
                 self.column_name
             ].apply(
-                lambda x: int(value in x) if isinstance(x, list) else 0,
+                lambda x: int(value in x) if x else 0,
             )
 
         # Handle "others" category as count if min_frequency is provided
         if self.threshold:
-            one_hot_columns[f"{self.column_name}_other"] = df[self.column_name].apply(
-                lambda x: (
-                    sum(1 for item in x if item not in self.unique_values)
-                    if isinstance(x, list)
-                    else 0
-                ),
+            one_hot_columns[f"{self.column_name}_others"] = (
+                df[self.column_name]
+                .apply(
+                    lambda x: any(item not in self.unique_values for item in x) if x else False,
+                )
+                .astype(int)
             )
 
         # Combine all one-hot columns into a new DataFrame
