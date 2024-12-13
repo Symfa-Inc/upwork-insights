@@ -57,17 +57,14 @@ class ListProcessor(BaseProcessor):
 
         # Select all skills if threshold is not set
         if self.threshold is None:
-            self.unique_values = set(value_counts.keys())
-            self.ratio = df_value['ratio'].tolist()
-            self.cumulative_ratio = df_value['cumulative_ratio'].tolist()
-            return
+            threshold_index = len(df_value)
+        else:
+            threshold_index = (df_value['cumulative_ratio'] >= self.threshold).idxmax()
 
-        # Select skills based on threshold
-        threshold_index = df_value[df_value['cumulative_ratio'] >= self.threshold].index[0]
-        selected_values = df_value.loc[:threshold_index, 'value']
-        self.unique_values = set(selected_values)
-        self.ratio = df_value.loc[:threshold_index, 'ratio'].tolist()
-        self.cumulative_ratio = df_value.loc[:threshold_index, 'cumulative_ratio'].tolist()
+        selected_values = df_value.iloc[: threshold_index + 1]
+        self.unique_values = set(selected_values['value'])
+        self.ratio = selected_values['ratio'].tolist()
+        self.cumulative_ratio = selected_values['cumulative_ratio'].tolist()
 
     def _transform(self, df: pd.DataFrame) -> pd.DataFrame:
         """Transforms the data by one-hot encoding the list feature and adding an "others" category if applicable.
@@ -122,7 +119,7 @@ class ListProcessor(BaseProcessor):
 if __name__ == '__main__':
     data = pd.DataFrame(
         {
-            'skill': [
+            'skills': [
                 ['Python', 'SQL', 'Pandas'],
                 ['Python', 'Java', 'C++'],
                 ['Python', 'R', 'Statistics'],
@@ -133,7 +130,7 @@ if __name__ == '__main__':
         },
     )
 
-    processor = ListProcessor(column_name='skills', threshold=0.8)
+    processor = ListProcessor(column_name='skills')
     processor.fit(data)
     transformed_data = processor.transform(data)
     print(transformed_data)
