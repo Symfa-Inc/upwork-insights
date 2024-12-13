@@ -6,7 +6,7 @@ from src.data.feature_processors.base_processor import BaseProcessor
 from src.data.utils import normalize_to_snake_name
 
 
-class CategoryOneHotProcessor(BaseProcessor):
+class OneHotProcessor(BaseProcessor):
     """A processor for one-hot encoding a categorical column with an optional cumulative coverage threshold.
 
     Attributes:
@@ -114,7 +114,7 @@ if __name__ == '__main__':
     )
 
     # Initialize processor with a threshold
-    processor = CategoryOneHotProcessor(column_name='category', threshold=0.7)
+    processor = OneHotProcessor(column_name='category', threshold=0.7)
 
     # Fit the processor
     processor.fit(data)
