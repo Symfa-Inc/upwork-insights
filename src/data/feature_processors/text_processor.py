@@ -109,15 +109,17 @@ class TextProcessor(BaseProcessor):
         cumulative_variance = np.cumsum(self.pca.explained_variance_ratio_)
         n_components = np.argmax(cumulative_variance >= self.pca_threshold) + 1
 
-        # Directly reduce the PCA components to the desired number
-        self.pca.components_ = self.pca.components_[:n_components]
-        self.pca.explained_variance_ratio_ = self.pca.explained_variance_ratio_[:n_components]
-        self.pca.n_components_ = n_components
+        # DONE: check if direct reduction of the PCA components is more optimal
+        # This reduction is not more optimal, it should be the same. I do it by refitting PCA because I think it is
+        # bad idea to manually change private parameters. Yes it is technically slower, but insignificantly.
 
-        # TODO: check if direct reduction of the PCA components is more optimal
+        # # Directly reduce the PCA components to the desired number
+        # # self.pca.components_ = self.pca.components_[:n_components]
+        # # self.pca.explained_variance_ratio_ = self.pca.explained_variance_ratio_[:n_components]
+        # # self.pca.n_components_ = n_components
         # Refit PCA with the optimal number of components
-        # self.pca2 = PCA(n_components=n_components)
-        # self.pca2.fit(embeddings)
+        self.pca = PCA(n_components=n_components)
+        self.pca.fit(embeddings)
 
     def _transform(self, df: pd.DataFrame) -> pd.DataFrame:
         """Transforms the data by generating embeddings, scaling them, and applying PCA.
