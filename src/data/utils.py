@@ -179,8 +179,8 @@ def get_csv_converters() -> dict:
               to process the column data during CSV reading.
 
     Example:
-        >>> converters = get_csv_converters()
-        >>> df = pd.read_csv("example.csv", converters=converters)
+        converters = get_csv_converters()
+        df = pd.read_csv("example.csv", converters=converters)
     """
     converters = {
         'SKILLS': safe_literal_eval,
