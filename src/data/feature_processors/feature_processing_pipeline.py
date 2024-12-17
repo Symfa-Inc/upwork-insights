@@ -1,4 +1,3 @@
-import json
 import logging
 import pickle
 from typing import List
@@ -65,23 +64,41 @@ class FeatureProcessingPipeline:
         return df
 
     def generate_report(self) -> str:
-        """Generates a JSON-like report of all processors and their parameters.
+        """Generates a YAML-like report of all processors and their parameters.
 
         Returns:
-            str: A string representation of the pipeline configuration in JSON format.
+            str: A YAML-like string representation of the pipeline configuration.
         """
-        report = []
-        for processor in self.processors:
-            processor_info = {
-                'column_name': processor.column_name,
-                'processor_class': processor.__class__.__name__,
-                'parameters': processor.get_params(),
-            }
-            report.append(processor_info)
 
-        # Convert the report list to a JSON-like string with indentation for readability
-        json_report = json.dumps(report, indent=4)
-        return json_report
+        def serialize(value, indent=0):
+            """Recursively converts objects into YAML-like string format with indentation."""
+            if isinstance(value, dict):
+                result = ''
+                for k, v in value.items():
+                    result += ' ' * indent + f"{k}:\n" + serialize(v, indent + 2)
+                return result
+            elif isinstance(value, list):
+                result = ''
+                for item in value:
+                    result += ' ' * indent + '- ' + serialize(item, indent + 2).lstrip()
+                return result
+            elif isinstance(value, (str, int, float, bool)):
+                return ' ' * indent + str(value) + '\n'
+            elif value is None:
+                return ' ' * indent + 'null\n'
+            else:
+                return ' ' * indent + str(value) + '\n'
+
+        # Build the YAML-like structure
+        report = ''
+        for i, processor in enumerate(self.processors, start=1):
+            report += f"Processor {i}:\n"
+            report += f"  column_name: {processor.column_name}\n"
+            report += f"  processor_class: {processor.__class__.__name__}\n"
+            report += '  parameters:\n'
+            report += serialize(processor.get_params(), indent=4)
+
+        return report
 
     def save_pipeline(self, path: str) -> None:
         """Saves the FeatureProcessingPipeline object to a file using pickle.

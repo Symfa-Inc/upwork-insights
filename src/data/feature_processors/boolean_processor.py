@@ -51,8 +51,10 @@ class BooleanProcessor(BaseProcessor):
         Raises:
             ValueError: If `fit` has not been called and `most_common` is not set.
         """
-        df[self.column_name] = df[self.column_name].fillna(self.most_common).astype(int)
-
+        df[self.column_name] = (
+            df[self.column_name].infer_objects(copy=False).fillna(self.most_common)
+        )
+        df[self.column_name] = df[self.column_name].astype(int)
         return df
 
     def get_params(self) -> dict:

@@ -8,9 +8,9 @@ from sklearn.base import TransformerMixin
 from sklearn.decomposition import PCA
 
 from src.data.feature_processors.base_processor import BaseProcessor
-from src.data.utils import extract_fitted_attributes
 
 load_dotenv()
+openai_client = OpenAI()
 
 
 class TextProcessor(BaseProcessor):
@@ -19,43 +19,32 @@ class TextProcessor(BaseProcessor):
     Attributes:
         column_name (str): The name of the column to process.
         pca_threshold (float): Explained variance ratio threshold for PCA.
-        openai_client (OpenAI): The OpenAI client used to generate embeddings.
-        scaler (Optional[TransformerMixin]): Scaler instance to normalize data, defaults to None.
         pca (Optional[PCA]): PCA instance, fitted during the `fit` method.
     """
 
-    openai_client: OpenAI
     scaling_method: Optional[Type[TransformerMixin]]
     pca_threshold: float
     pca: Optional[PCA]
-    scaler: Optional[TransformerMixin]
 
     def __init__(
         self,
         column_name: str,
         pca_threshold: float = 0.85,
-        scaling_method: Optional[Type[TransformerMixin]] = None,
     ):
         """Initializes the TextProcessor with OpenAI client, PCA threshold, and optional scaler.
 
         Args:
             column_name (str): The name of the column to process.
             pca_threshold (float): Explained variance ratio threshold for PCA.
-            scaling_method (Optional[Type[TransformerMixin]]): Scaling method to normalize data. Defaults to None.
 
         Raises:
             ValueError: If `pca_threshold` is not between 0 and 1.
         """
-        self.openai_client = OpenAI()
-
         if not (0 < pca_threshold <= 1):
             raise ValueError('pca_threshold must be between 0 and 1.')
 
         self.pca_threshold = pca_threshold
         self.pca = None  # PCA instance will be initialized during `fit`
-        self.scaler = None  # Scaler instance will be initialized during `fit`
-
-        self.scaling_method = scaling_method
 
         # Call parent class initializer
         super().__init__(column_name)
@@ -63,7 +52,7 @@ class TextProcessor(BaseProcessor):
     def _get_embeddings(
         self,
         texts: List[str],
-        batch_size: int = 50,
+        batch_size: int = 1000,
         model: str = 'text-embedding-3-large',
     ) -> np.ndarray:
         """Generates embeddings for a list of strings using OpenAI's API.
@@ -75,11 +64,12 @@ class TextProcessor(BaseProcessor):
         Returns:
             np.ndarray: A numpy array of embeddings.
         """
+        cleaned_texts = [text if isinstance(text, str) else 'None' for text in texts]
         embeddings = []
 
         for i in range(0, len(texts), batch_size):
-            batch = texts[i : i + batch_size]
-            response = self.openai_client.embeddings.create(input=batch, model=model)
+            batch = cleaned_texts[i : i + batch_size]
+            response = openai_client.embeddings.create(input=batch, model=model)
             embeddings.extend([res.embedding for res in response.data])
 
         return np.array(embeddings)
@@ -93,12 +83,8 @@ class TextProcessor(BaseProcessor):
         Raises:
             ValueError: If the column is not found in the DataFrame.
         """
-        embeddings = self._get_embeddings(df[self.column_name].tolist())
-
-        # Scale embeddings
-        if self.scaling_method:
-            self.scaler = self.scaling_method()
-            embeddings = self.scaler.fit_transform(embeddings)
+        texts = df[self.column_name].tolist()
+        embeddings = self._get_embeddings(texts)
 
         # Initial PCA fit to compute explained variance
         self.pca = PCA()
@@ -129,10 +115,6 @@ class TextProcessor(BaseProcessor):
         texts = df[self.column_name].tolist()
         embeddings = self._get_embeddings(texts)
 
-        # Scale embeddings
-        if self.scaler:
-            embeddings = self.scaler.transform(embeddings)
-
         # Apply PCA
         embeddings = self.pca.transform(embeddings)
 
@@ -149,7 +131,6 @@ class TextProcessor(BaseProcessor):
 
     def get_params(self) -> dict:
         return {
-            'scaler': extract_fitted_attributes(self.scaler) if self.scaler else None,
             'PCA': {
                 'n_params': int(self.pca.n_components_),
                 'explained_variance': self.pca.explained_variance_ratio_.tolist(),
@@ -181,7 +162,6 @@ if __name__ == '__main__':
     processor = TextProcessor(
         column_name='text_column',
         pca_threshold=0.85,
-        scaling_method=None,
     )
 
     # Transform the data
