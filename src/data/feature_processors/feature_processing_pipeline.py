@@ -100,6 +100,24 @@ class FeatureProcessingPipeline:
             logger.error(f"Failed to save pipeline to {path}: {e}")
             raise
 
+    def save_report(self, path: str) -> None:
+        """Saves the pipeline report to a file.
+
+        Args:
+            path (str): The file path where the report will be saved.
+
+        Raises:
+            IOError: If the file cannot be written.
+        """
+        try:
+            report = self.generate_report()
+            with open(path, 'w') as file:
+                file.write(report)
+            logger.info(f"Pipeline report saved successfully to {path}.")
+        except Exception as e:
+            logger.error(f"Failed to save pipeline report to {path}: {e}")
+            raise
+
 
 if __name__ == '__main__':
     # Example usage
