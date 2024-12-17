@@ -136,12 +136,15 @@ class TextProcessor(BaseProcessor):
         # Apply PCA
         embeddings = self.pca.transform(embeddings)
 
-        # Create new columns for principal components
-        for i in range(embeddings.shape[1]):
-            df[f"{self.column_name}_PC{i + 1}"] = embeddings[:, i]
+        # Create a DataFrame for principal components
+        pc_columns = {
+            f"{self.column_name}_PC{i + 1}": embeddings[:, i] for i in range(embeddings.shape[1])
+        }
+        pc_df = pd.DataFrame(pc_columns, index=df.index)
 
-        # Drop the original column
-        df.drop(columns=[self.column_name], inplace=True)
+        # Drop the original column and concatenate new principal components
+        df = df.drop(columns=[self.column_name])
+        df = pd.concat([df, pc_df], axis=1)
         return df
 
     def get_params(self) -> dict:

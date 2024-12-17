@@ -71,9 +71,6 @@ class OneHotProcessor(BaseProcessor):
         Returns:
             pd.DataFrame: The transformed DataFrame with one-hot encoded features.
         """
-        if not self.selected_categories:
-            raise ValueError('Processor has not been fitted. Call `fit` first.')
-
         # One-hot encode the selected categories
         one_hot_columns = {}
         for category in self.selected_categories:
@@ -90,7 +87,10 @@ class OneHotProcessor(BaseProcessor):
         # Combine all one-hot columns into a new DataFrame
         encoded_df = pd.DataFrame(one_hot_columns, index=df.index)
 
-        return encoded_df
+        # Concatenate the original DataFrame (excluding the processed column) with the new one-hot columns
+        df = pd.concat([df.drop(columns=[self.column_name]), encoded_df], axis=1)
+
+        return df
 
     def get_params(self) -> dict:
         """Retrieves the parameters of the processor.

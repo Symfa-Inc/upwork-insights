@@ -1,7 +1,5 @@
 from typing import List, Tuple, Type
 
-from sklearn.preprocessing import StandardScaler
-
 from src.data.feature_processors import (
     BooleanProcessor,
     FrequencyProcessor,
@@ -56,7 +54,7 @@ STAGES: List[Tuple[str, Type[BaseProcessor], dict]] = [
     ('earnings', NumericProcessor, {}),
     ('geo_country_name', FrequencyProcessor, {}),
     ('geo_country_population', NumericProcessor, {}),
-    ('geo_country_gdppc', NumericProcessor, {'scaler_class': StandardScaler}),
+    ('geo_country_gdppc', NumericProcessor, {}),
     ('geo_city_name', FrequencyProcessor, {}),
     ('geo_city_population', NumericProcessor, {}),
     ('geo_city_agglomeration', OneHotProcessor, {'threshold': 0.50}),
