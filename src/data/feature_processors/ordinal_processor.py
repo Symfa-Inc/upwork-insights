@@ -40,6 +40,7 @@ class OrdinalProcessor(BaseProcessor):
         if self.mapping is None:
             unique_values = df[self.column_name].dropna().unique()  # Exclude missing values
             self.mapping = {value: i for i, value in enumerate(unique_values)}
+        self.mode_value = df[self.column_name].mode().iloc[0]
 
     def _transform(self, df: pd.DataFrame) -> pd.DataFrame:
         """Transforms the data by mapping the ordinal values to integers using the defined or automatic mapping.
@@ -53,8 +54,13 @@ class OrdinalProcessor(BaseProcessor):
         Raises:
             ValueError: If the processor has not been fitted or the column is missing.
         """
-        # Map values using the defined mapping
-        df[self.column_name] = df[self.column_name].map(self.mapping).fillna(-1).astype(int)
+        # Map values and fill missing values with the mode
+        df[self.column_name] = (
+            df[self.column_name]
+            .fillna(self.mode_value)  # Fill missing with mode
+            .map(self.mapping)  # Map ordinal values
+            .astype(int)
+        )
 
         return df
 

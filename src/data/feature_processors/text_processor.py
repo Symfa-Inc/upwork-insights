@@ -63,7 +63,7 @@ class TextProcessor(BaseProcessor):
     def _get_embeddings(
         self,
         texts: List[str],
-        batch_size: int = 100,
+        batch_size: int = 50,
         model: str = 'text-embedding-3-large',
     ) -> np.ndarray:
         """Generates embeddings for a list of strings using OpenAI's API.

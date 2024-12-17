@@ -13,14 +13,14 @@ class NumericProcessor(BaseProcessor):
 
     Attributes:
         column_name (str): The name of the column to process.
-        scaler_class (Optional[Type[TransformerMixin]]): The scaler class to use (e.g., StandardScaler, RobustScaler).
+        scaler_class (Type[Union[StandardScaler, MinMaxScaler, RobustScaler]]): The scaler class to use.
         scaler (Optional[TransformerMixin]): The instantiated and fitted scaler.
     """
 
     def __init__(
         self,
         column_name: str,
-        scaler_class: Type[Union[StandardScaler, MinMaxScaler, RobustScaler]] = RobustScaler,
+        scaler_class: Type[Union[StandardScaler]] = StandardScaler,
     ):
         """Initializes the NumericProcessor with a column name and optional scaler class.
 
@@ -65,10 +65,10 @@ class NumericProcessor(BaseProcessor):
         temp_df = self.scaler.transform(temp_df)
 
         # Replace NaNs in the scaled data with -1
-        if self.scaler_class in {RobustScaler, MinMaxScaler}:
-            temp_df = np.where(np.isnan(temp_df), -1, temp_df)
-        else:
-            temp_df = np.where(np.isnan(temp_df), 0, temp_df)
+        # if self.scaler_class in {RobustScaler, MinMaxScaler}:
+        #     temp_df = np.where(np.isnan(temp_df), -1, temp_df)
+        # else:
+        temp_df = np.where(np.isnan(temp_df), 0, temp_df)
 
         # Update the original DataFrame with the scaled column
         df[self.column_name] = temp_df
@@ -98,24 +98,12 @@ if __name__ == '__main__':
         },
     )
 
-    # Processor with RobustScaler
+    # Processor with StandardScaler
     robust_processor = NumericProcessor(column_name='numeric_column_1')
     transformed_data_robust = robust_processor.process(data)
     print('Transformed Data with RobustScaler:')
     print(transformed_data_robust)
 
-    # Processor with StandardScaler
-    standard_processor = NumericProcessor(
-        column_name='numeric_column_2',
-        scaler_class=StandardScaler,
-    )
-    transformed_data_standard = standard_processor.process(data)
-    print('\nTransformed Data with StandardScaler:')
-    print(transformed_data_standard)
-
     # Processor Parameters
     print('\nProcessor Parameters (RobustScaler):')
     print(robust_processor.get_params())
-
-    print('\nProcessor Parameters (StandardScaler):')
-    print(standard_processor.get_params())
