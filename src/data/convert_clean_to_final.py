@@ -6,10 +6,18 @@ import pandas as pd
 from omegaconf import DictConfig, OmegaConf
 
 from src import PROJECT_DIR
+from src.data.feature_processors import FeatureProcessingPipeline
+from src.data.pipeline_stages import STAGES
 from src.data.utils import get_csv_converters
 
 log = logging.getLogger(__name__)
 log.setLevel(logging.INFO)
+
+
+def set_up_pipeline() -> FeatureProcessingPipeline:
+    return FeatureProcessingPipeline(
+        [processor(column, **kwargs) for column, processor, kwargs in STAGES],
+    )
 
 
 @hydra.main(
@@ -27,10 +35,22 @@ def main(cfg: DictConfig) -> None:
     # Read the dataset
     df = pd.read_csv(data_path, converters=get_csv_converters())  # noqa: F841
 
-    # Save the clean dataset
+    # Load pipeline
+    pipeline = set_up_pipeline()
+
+    # Transform data with the pipeline
+    pipeline.execute(df)
+
+    # Save the final dataset
     os.makedirs(save_dir, exist_ok=True)
     data_save_path = os.path.join(save_dir, 'final.csv')  # noqa: F841
     df.to_csv(data_save_path, index=False)
+
+    pipeline_save_path = os.path.join(save_dir, 'pipeline.pkl')  # noqa: F841
+    pipeline.save_pipeline(pipeline_save_path)
+
+    report_save_path = os.path.join(save_dir, 'report.json')
+    pipeline.save_report(report_save_path)
 
     log.info('Complete')
 
