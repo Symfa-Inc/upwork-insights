@@ -1,5 +1,6 @@
 import json
 import logging
+import pickle
 from typing import List
 
 import pandas as pd
@@ -81,6 +82,23 @@ class FeatureProcessingPipeline:
         # Convert the report list to a JSON-like string with indentation for readability
         json_report = json.dumps(report, indent=4)
         return json_report
+
+    def save_pipeline(self, path: str) -> None:
+        """Saves the FeatureProcessingPipeline object to a file using pickle.
+
+        Args:
+            path (str): The file path where the pipeline object will be saved.
+
+        Raises:
+            IOError: If the file cannot be written.
+        """
+        try:
+            with open(path, 'wb') as file:
+                pickle.dump(self, file)
+            logger.info(f"Pipeline saved successfully to {path}.")
+        except Exception as e:
+            logger.error(f"Failed to save pipeline to {path}: {e}")
+            raise
 
 
 if __name__ == '__main__':
