@@ -1,4 +1,5 @@
 import json
+import logging
 from typing import List
 
 import pandas as pd
@@ -6,6 +7,8 @@ import pandas as pd
 from src.data.feature_processors.base_processor import BaseProcessor
 from src.data.feature_processors.boolean_processor import BooleanProcessor
 from src.data.feature_processors.ordinal_processor import OrdinalProcessor
+
+logger = logging.getLogger(__name__)
 
 
 class FeatureProcessingPipeline:
@@ -40,8 +43,19 @@ class FeatureProcessingPipeline:
         Returns:
             The processed df after all processors have been applied.
         """
-        for processor in self.processors:
+        total_processors = len(self.processors)
+        for i, processor in enumerate(self.processors, start=1):
+            # Log the current processor and progress
+            logger.info(
+                f"Stage {i}/{total_processors}: "
+                f"Executing '{processor.__class__.__name__}' for column '{processor.column_name}'",
+            )
+            # Apply the processor
             df = processor.process(df)
+            # Log completion of the current stage
+            logger.info(f"Stage {i}/{total_processors} completed successfully.")
+
+        logger.info('Pipeline execution completed successfully.')
         return df
 
     def transform(self, df: pd.DataFrame) -> pd.DataFrame:
