@@ -39,7 +39,8 @@ class OrdinalProcessor(BaseProcessor):
         """
         if self.mapping is None:
             unique_values = df[self.column_name].dropna().unique()  # Exclude missing values
-            self.mapping = {value: i for i, value in enumerate(unique_values)}
+            self.mapping = {value: i for i, value in enumerate(sorted(unique_values))}
+            # TODO: проверить mapping
         self.mode_value = df[self.column_name].mode().iloc[0]
 
     def _transform(self, df: pd.DataFrame) -> pd.DataFrame:

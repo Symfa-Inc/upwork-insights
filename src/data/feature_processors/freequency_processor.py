@@ -35,6 +35,7 @@ class FrequencyProcessor(BaseProcessor):
         # Calculate relative frequencies
         value_counts = df[self.column_name].value_counts(normalize=True)
         self.frequency_mapping = value_counts.to_dict()
+        # TODO: посчитать значение для null
 
     def _transform(self, df: pd.DataFrame) -> pd.DataFrame:
         """Transforms the data by encoding the column using relative frequencies.
