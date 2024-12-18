@@ -64,7 +64,7 @@ class TextProcessor(BaseProcessor):
         Returns:
             np.ndarray: A numpy array of embeddings.
         """
-        cleaned_texts = [text if isinstance(text, str) else 'None' for text in texts]
+        cleaned_texts = [text if isinstance(text, str) else 'Missing' for text in texts]
         embeddings = []
 
         for i in range(0, len(texts), batch_size):
