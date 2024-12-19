@@ -1,4 +1,6 @@
 from src.data.feature_processors.boolean_processor import BooleanProcessor  # noqa: F401
+from src.data.feature_processors.delete_processor import DeleteProcessor  # noqa: F401
+from src.data.feature_processors.do_nothing_processor import DoNothingProcessor  # noqa: F401
 from src.data.feature_processors.feature_processing_pipeline import (  # noqa: F401
     FeatureProcessingPipeline,
 )

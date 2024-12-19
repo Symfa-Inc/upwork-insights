@@ -40,7 +40,6 @@ class OrdinalProcessor(BaseProcessor):
         if self.mapping is None:
             unique_values = df[self.column_name].dropna().unique()  # Exclude missing values
             self.mapping = {value: i for i, value in enumerate(sorted(unique_values))}
-            # TODO: проверить mapping
         self.mode_value = df[self.column_name].mode().iloc[0]
 
     def _transform(self, df: pd.DataFrame) -> pd.DataFrame:
@@ -74,6 +73,7 @@ if __name__ == '__main__':
     data = pd.DataFrame(
         {
             'ordinal_col': ['low', 'medium', 'high', 'low', 'high', None],
+            'ordinal_numeric': [0, 1, 2, 0, 2, None],
         },
     )
 
@@ -84,3 +84,12 @@ if __name__ == '__main__':
     processed_data = processor.process(data)
 
     print(processed_data)
+
+    processor = OrdinalProcessor(column_name='ordinal_numeric')
+
+    # Fit and transform
+    processed_data = processor.process(data)
+
+    print(processed_data)
+
+    print(processor.get_params())

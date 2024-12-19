@@ -33,9 +33,8 @@ class FrequencyProcessor(BaseProcessor):
             ValueError: If the column is not found in the DataFrame.
         """
         # Calculate relative frequencies
-        value_counts = df[self.column_name].value_counts(normalize=True)
+        value_counts = df[self.column_name].value_counts(normalize=True, dropna=False)
         self.frequency_mapping = value_counts.to_dict()
-        # TODO: посчитать значение для null
 
     def _transform(self, df: pd.DataFrame) -> pd.DataFrame:
         """Transforms the data by encoding the column using relative frequencies.
