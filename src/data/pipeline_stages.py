@@ -53,7 +53,7 @@ STAGES: List[Tuple[str, Type[BaseProcessor], dict]] = [
     ('english_proficiency', DeleteProcessor, {}),  # TODO: Нужно посмотреть значения и удалить
     ('freelancer_type', OrdinalProcessor, {}),
     ('is_rising_talent', BooleanProcessor, {}),
-    ('earnings', OrdinalProcessor, {}),
+    ('earnings', OrdinalProcessor, {}),  # FIXME: Maybe it is Numeric?
     ('geo_country_name', FrequencyProcessor, {}),
     ('geo_country_population', NumericProcessor, {}),
     ('geo_country_gdppc', NumericProcessor, {}),
@@ -72,7 +72,7 @@ STAGES: List[Tuple[str, Type[BaseProcessor], dict]] = [
     ('company_description', TextProcessor, {}),
     ('company_summary', TextProcessor, {}),
     ('company_size', DeleteProcessor, {}),
-    ('company_industry', FrequencyProcessor, {}),
+    ('company_industry', FrequencyProcessor, {}),  # TODO: Ordinal? Currently, fill with 0s
     ('company_visible', BooleanProcessor, {}),
     ('company_jobs_posted_count', NumericProcessor, {}),
     ('company_jobs_filled_count', NumericProcessor, {}),
@@ -81,7 +81,7 @@ STAGES: List[Tuple[str, Type[BaseProcessor], dict]] = [
     ('company_total_charges_amount', NumericProcessor, {}),
     ('company_feedback_score', NumericProcessor, {}),
     ('company_avg_hourly_rate', NumericProcessor, {}),
-    ('company_css_tier', OrdinalProcessor, {}),
+    ('company_css_tier', OrdinalProcessor, {}),  # FIXME: Maybe it is Numeric?
     ('company_hire_rate', DoNothingProcessor, {}),
     ('company_experience', NumericProcessor, {}),
     ('segmentation_data_value', OneHotProcessor, {}),
