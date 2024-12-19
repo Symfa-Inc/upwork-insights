@@ -20,6 +20,15 @@ hydra:
         formatter: simple
         # relative to the job log directory
         filename: ${hydra.run.dir}/${now:%d-%m-%Y_%H-%M-%S}.log
+    loggers:
+      httpx: # Suppress HTTP request logs
+        level: WARNING
+        handlers: []
+        propagate: false
+      urllib3: # Suppress urllib3 logs
+        level: WARNING
+        handlers: []
+        propagate: false
     root:
       level: INFO
       handlers: [console, file]    # [console, file]
