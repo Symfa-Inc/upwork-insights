@@ -2,6 +2,8 @@ from typing import List, Tuple, Type
 
 from src.data.feature_processors import (
     BooleanProcessor,
+    DeleteProcessor,
+    DoNothingProcessor,
     FrequencyProcessor,
     ListProcessor,
     NumericProcessor,
@@ -28,7 +30,7 @@ STAGES: List[Tuple[str, Type[BaseProcessor], dict]] = [
     # 'id',
     ('title', TextProcessor, {}),
     ('description', TextProcessor, {}),
-    # 'publsih_time',
+    ('publsih_time', DeleteProcessor, {}),
     ('is_premium', BooleanProcessor, {}),
     ('connect_price', NumericProcessor, {}),
     ('job_type', OrdinalProcessor, {}),
@@ -48,7 +50,7 @@ STAGES: List[Tuple[str, Type[BaseProcessor], dict]] = [
     ('skills', ListProcessor, {'threshold': 0.80}),
     ('additional_skills', ListProcessor, {'threshold': 0.80}),
     ('english_skill', NumericProcessor, {}),
-    # ('english_proficiency', NumericProcessor, {}), TODO: Нужно посмотреть значения и удалить
+    ('english_proficiency', DeleteProcessor, {}),  # TODO: Нужно посмотреть значения и удалить
     ('freelancer_type', OrdinalProcessor, {}),
     ('is_rising_talent', BooleanProcessor, {}),
     ('earnings', OrdinalProcessor, {}),
@@ -59,18 +61,18 @@ STAGES: List[Tuple[str, Type[BaseProcessor], dict]] = [
     ('geo_city_population', NumericProcessor, {}),
     ('geo_city_agglomeration', OneHotProcessor, {'threshold': 0.63}),
     ('is_local_market', BooleanProcessor, {}),
-    # ('wh_status', NumericProcessor, {}), TODO: нужно дропнуть для модели
+    ('wh_status', DeleteProcessor, {}),
     ('wh_total_hours', NumericProcessor, {}),
-    # ('wh_feedback_score', NumericProcessor, {}), TODO: исключаем для обучающего датасета.
-    # ('wh_feedback_to_client_score', NumericProcessor, {}), TODO: исключаем для обучающего датасета.
+    ('wh_feedback_score', DeleteProcessor, {}),
+    ('wh_feedback_to_client_score', DeleteProcessor, {}),
     ('wh_total_charge', NumericProcessor, {}),
     ('wh_hourly_rate', NumericProcessor, {}),
     ('wh_duration', NumericProcessor, {}),
     ('company_name', TextProcessor, {}),
     ('company_description', TextProcessor, {}),
     ('company_summary', TextProcessor, {}),
-    # ('company_size', NumericProcessor, {}), TODO: исключаем для обучающего датасета.
-    # ('company_industry', FrequencyProcessor, {}), TODO: добить freequency
+    ('company_size', DeleteProcessor, {}),
+    ('company_industry', FrequencyProcessor, {}),
     ('company_visible', BooleanProcessor, {}),
     ('company_jobs_posted_count', NumericProcessor, {}),
     ('company_jobs_filled_count', NumericProcessor, {}),
@@ -80,7 +82,7 @@ STAGES: List[Tuple[str, Type[BaseProcessor], dict]] = [
     ('company_feedback_score', NumericProcessor, {}),
     ('company_avg_hourly_rate', NumericProcessor, {}),
     ('company_css_tier', OrdinalProcessor, {}),
-    # 'company_hire_rate',
+    ('company_hire_rate', DoNothingProcessor, {}),
     ('company_experience', NumericProcessor, {}),
     ('segmentation_data_value', OneHotProcessor, {}),
     ('segmentation_data_label', OneHotProcessor, {}),
