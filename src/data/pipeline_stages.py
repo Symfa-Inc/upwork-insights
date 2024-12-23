@@ -4,6 +4,7 @@ from src.data.feature_processors import (
     BooleanProcessor,
     DeleteProcessor,
     DoNothingProcessor,
+    FillNaProcessor,
     FrequencyProcessor,
     ListProcessor,
     NumericProcessor,
@@ -49,11 +50,11 @@ STAGES: List[Tuple[str, Type[BaseProcessor], dict]] = [
     ('tags', ListProcessor, {}),
     ('skills', ListProcessor, {'threshold': 0.80}),
     ('additional_skills', ListProcessor, {'threshold': 0.80}),
-    ('english_skill', NumericProcessor, {}),
-    ('english_proficiency', DeleteProcessor, {}),  # TODO: Нужно посмотреть значения и удалить
-    ('freelancer_type', OrdinalProcessor, {}),
+    ('english_skill', FillNaProcessor, {}),
+    ('english_proficiency', DeleteProcessor, {}),
+    ('freelancer_type', FillNaProcessor, {}),
     ('is_rising_talent', BooleanProcessor, {}),
-    ('earnings', OrdinalProcessor, {}),  # FIXME: Maybe it is Numeric?
+    ('earnings', FillNaProcessor, {}),
     ('geo_country_name', FrequencyProcessor, {}),
     ('geo_country_population', NumericProcessor, {}),
     ('geo_country_gdppc', NumericProcessor, {}),
@@ -81,7 +82,7 @@ STAGES: List[Tuple[str, Type[BaseProcessor], dict]] = [
     ('company_total_charges_amount', NumericProcessor, {}),
     ('company_feedback_score', NumericProcessor, {}),
     ('company_avg_hourly_rate', NumericProcessor, {}),
-    ('company_css_tier', OrdinalProcessor, {}),  # FIXME: Maybe it is Numeric?
+    ('company_css_tier', FillNaProcessor, {}),  # Does not change anything. Fills NA with mode value
     ('company_hire_rate', DoNothingProcessor, {}),
     ('company_experience', NumericProcessor, {}),
     ('segmentation_data_value', OneHotProcessor, {}),
