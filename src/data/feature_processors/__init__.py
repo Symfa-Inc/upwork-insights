@@ -4,6 +4,7 @@ from src.data.feature_processors.do_nothing_processor import DoNothingProcessor 
 from src.data.feature_processors.feature_processing_pipeline import (  # noqa: F401
     FeatureProcessingPipeline,
 )
+from src.data.feature_processors.fill_na_processor import FillNaProcessor  # noqa: F401
 from src.data.feature_processors.freequency_processor import FrequencyProcessor  # noqa: F401
 from src.data.feature_processors.list_processor import ListProcessor  # noqa: F401
 from src.data.feature_processors.numeric_processor import NumericProcessor  # noqa: F401
