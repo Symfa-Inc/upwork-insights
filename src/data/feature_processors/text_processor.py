@@ -1,10 +1,9 @@
-from typing import List, Optional, Type
+from typing import List
 
 import numpy as np
 import pandas as pd
 from dotenv import load_dotenv
 from openai import OpenAI
-from sklearn.base import TransformerMixin
 from sklearn.decomposition import PCA
 
 from src.data.feature_processors.base_processor import BaseProcessor
@@ -22,9 +21,8 @@ class TextProcessor(BaseProcessor):
         pca (Optional[PCA]): PCA instance, fitted during the `fit` method.
     """
 
-    scaling_method: Optional[Type[TransformerMixin]]
+    column_name: str
     pca_threshold: float
-    pca: Optional[PCA]
 
     def __init__(
         self,
@@ -44,7 +42,6 @@ class TextProcessor(BaseProcessor):
             raise ValueError('pca_threshold must be between 0 and 1.')
 
         self.pca_threshold = pca_threshold
-        self.pca = None  # PCA instance will be initialized during `fit`
 
         # Call parent class initializer
         super().__init__(column_name)
