@@ -2,7 +2,6 @@ from typing import List, Tuple, Type
 
 from src.data.feature_processors import (
     BooleanProcessor,
-    DeleteProcessor,
     DoNothingProcessor,
     FillNaProcessor,
     FrequencyProcessor,
@@ -28,10 +27,10 @@ ENGAGEMENT_DURATION_MAPPING = {
 }
 
 STAGES: List[Tuple[str, Type[BaseProcessor], dict]] = [
-    # 'id',
+    ('id', DoNothingProcessor, {}),
     ('title', TextProcessor, {}),
     ('description', TextProcessor, {}),
-    ('publsih_time', DeleteProcessor, {}),
+    # ('publsih_time', DeleteProcessor, {}),
     ('is_premium', BooleanProcessor, {}),
     ('connect_price', NumericProcessor, {}),
     ('job_type', OrdinalProcessor, {}),
@@ -51,7 +50,7 @@ STAGES: List[Tuple[str, Type[BaseProcessor], dict]] = [
     ('skills', ListProcessor, {'threshold': 0.80}),
     ('additional_skills', ListProcessor, {'threshold': 0.80}),
     ('english_skill', FillNaProcessor, {}),
-    ('english_proficiency', DeleteProcessor, {}),
+    # ('english_proficiency', DeleteProcessor, {}),
     ('freelancer_type', FillNaProcessor, {}),
     ('is_rising_talent', BooleanProcessor, {}),
     ('earnings', FillNaProcessor, {}),
@@ -62,18 +61,18 @@ STAGES: List[Tuple[str, Type[BaseProcessor], dict]] = [
     ('geo_city_population', NumericProcessor, {}),
     ('geo_city_agglomeration', OneHotProcessor, {'threshold': 0.63}),
     ('is_local_market', BooleanProcessor, {}),
-    ('wh_status', DeleteProcessor, {}),
+    # ('wh_status', DeleteProcessor, {}),
     ('wh_total_hours', NumericProcessor, {}),
-    ('wh_feedback_score', DeleteProcessor, {}),
-    ('wh_feedback_to_client_score', DeleteProcessor, {}),
+    # ('wh_feedback_score', DeleteProcessor, {}),
+    # ('wh_feedback_to_client_score', DeleteProcessor, {}),
     ('wh_total_charge', NumericProcessor, {}),
     ('wh_hourly_rate', NumericProcessor, {}),
     ('wh_duration', NumericProcessor, {}),
     ('company_name', TextProcessor, {}),
     ('company_description', TextProcessor, {}),
     ('company_summary', TextProcessor, {}),
-    ('company_size', DeleteProcessor, {}),
-    ('company_industry', FrequencyProcessor, {}),  # TODO: Ordinal? Currently, fill with 0s
+    # ('company_size', DeleteProcessor, {}),
+    ('company_industry', FrequencyProcessor, {}),
     ('company_visible', BooleanProcessor, {}),
     ('company_jobs_posted_count', NumericProcessor, {}),
     ('company_jobs_filled_count', NumericProcessor, {}),
