@@ -44,7 +44,8 @@ class NumericProcessor(BaseProcessor):
         kwargs = {'with_centering': False} if self.scaler_class == RobustScaler else {}
 
         self.scaler = self.scaler_class(**kwargs)
-        temp_df = df[[self.column_name]].dropna()
+        # Replace infinity and -infinity with NaN
+        temp_df = df[[self.column_name]].replace([np.inf, -np.inf], np.nan).dropna()
 
         # Fit the scaler
         self.scaler.fit(temp_df)
@@ -68,7 +69,7 @@ class NumericProcessor(BaseProcessor):
         # if self.scaler_class in {RobustScaler, MinMaxScaler}:
         #     temp_df = np.where(np.isnan(temp_df), -1, temp_df)
         # else:
-        temp_df = np.where(np.isnan(temp_df), 0, temp_df)
+        temp_df = np.where(np.isnan(temp_df), 0, temp_df.replace([np.inf, -np.inf], np.nan))
 
         # Update the original DataFrame with the scaled column
         df[self.column_name] = temp_df
