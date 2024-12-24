@@ -37,12 +37,18 @@ class FeatureProcessingPipeline:
     def execute(self, df: pd.DataFrame) -> pd.DataFrame:
         """Executes the pipeline by applying all processors sequentially to the input df.
 
+        This method also filters columns using only those which are actually processed.
+
         Args:
             df: The initial df to be processed.
 
         Returns:
             The processed df after all processors have been applied.
         """
+        columns = [processor.column_name for processor in self.processors]
+        logger.info(f"Columns used: {columns}")
+        df = df[columns]
+
         total_processors = len(self.processors)
         for i, processor in enumerate(self.processors, start=1):
             # Log the current processor and progress
