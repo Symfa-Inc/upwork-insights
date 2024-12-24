@@ -60,7 +60,7 @@ class NumericProcessor(BaseProcessor):
             pd.DataFrame: The transformed DataFrame with the scaled feature.
         """
         # Extract the column to scale
-        temp_df = df[[self.column_name]]
+        temp_df = df[[self.column_name]].replace([np.inf, -np.inf], np.nan)
 
         # Scale the data (NaNs remain untouched during scaling)
         temp_df = self.scaler.transform(temp_df)
@@ -69,7 +69,7 @@ class NumericProcessor(BaseProcessor):
         # if self.scaler_class in {RobustScaler, MinMaxScaler}:
         #     temp_df = np.where(np.isnan(temp_df), -1, temp_df)
         # else:
-        temp_df = np.where(np.isnan(temp_df), 0, temp_df.replace([np.inf, -np.inf], np.nan))
+        temp_df = np.where(np.isnan(temp_df), 0, temp_df)
 
         # Update the original DataFrame with the scaled column
         df[self.column_name] = temp_df
@@ -93,9 +93,9 @@ if __name__ == '__main__':
     # Sample DataFrame
     data = pd.DataFrame(
         {
-            '_numeric_column': [1, 2, 3, 4, np.nan, 6, 100, 200],
-            'numeric_column_1': [1, 2, 3, 4, np.nan, 6, 100, 200],
-            'numeric_column_2': [1, 2, 3, 4, np.nan, 6, 100, 200],
+            '_numeric_column': [1, 2, 3, 4, np.nan, 6, 100, 200, np.inf],
+            'numeric_column_1': [1, 2, 3, 4, np.nan, 6, 100, 200, np.inf],
+            # 'numeric_column_2': [1, 2, 3, 4, np.nan, 6, 100, 200],
         },
     )
 
