@@ -33,13 +33,13 @@ def main(cfg: DictConfig) -> None:
     data_path = str(os.path.join(PROJECT_DIR, cfg.data_path))
 
     # Read the dataset
-    df = pd.read_csv(data_path, converters=get_csv_converters())  # noqa: F841
+    df = pd.read_csv(data_path, converters=get_csv_converters())  # .sample(100)  # noqa: F841
 
     # Load pipeline
     pipeline = set_up_pipeline()
 
     # Transform data with the pipeline
-    pipeline.execute(df)
+    df = pipeline.execute(df)
 
     # Save the final dataset
     os.makedirs(save_dir, exist_ok=True)
@@ -49,7 +49,7 @@ def main(cfg: DictConfig) -> None:
     pipeline_save_path = os.path.join(save_dir, 'pipeline.pkl')  # noqa: F841
     pipeline.save_pipeline(pipeline_save_path)
 
-    report_save_path = os.path.join(save_dir, 'report.json')
+    report_save_path = os.path.join(save_dir, 'report.txt')
     pipeline.save_report(report_save_path)
 
     log.info('Complete')
