@@ -36,6 +36,7 @@ stages:
   # STAGE III
   convert_clean_to_final:
     cmd:
+    - echo "\nSTAGE III\n"
     - rm -rf data/final || true
     - python src/data/convert_clean_to_final.py
     deps:
