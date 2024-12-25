@@ -1,5 +1,4 @@
 stages:
-
   # STAGE I
   convert_raw_to_int:
     cmd:
