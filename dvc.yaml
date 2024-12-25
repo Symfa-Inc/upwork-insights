@@ -1,0 +1,48 @@
+stages:
+
+  # STAGE I
+  convert_raw_to_int:
+    cmd:
+    - echo "\nSTAGE I\n"
+    - rm data/interim/jobs.csv || true
+    - python src/data/convert_raw_to_int.py
+    deps:
+    - data/raw/ADDITIONALSKILLS.csv.gz
+    - data/raw/COMPANIES.csv.gz
+    - data/raw/JOB_ONTOLOGY_SKILLS.csv.gz
+    - data/raw/JOB_TAGS.csv.gz
+    - data/raw/JOBS.csv.gz
+    - data/raw/OCCUPATIONS.csv.gz
+    - data/raw/ONTOLOGY_SKILLS.csv.gz
+    - data/raw/OPEN_JOBS.csv.gz
+    - data/raw/SEGMENTATIONDATA.csv.gz
+    - data/raw/SIMILAR_JOBS.csv.gz
+    - data/raw/WORK_HISTORY.csv.gz
+    outs:
+    - data/interim/jobs.csv
+
+  # STAGE II
+  convert_int_to_clean:
+    cmd:
+    - echo "\nSTAGE II\n"
+    - rm -rf data/clean || true
+    - python src/data/convert_int_to_clean.py
+    deps:
+    - src/data/convert_int_to_clean.py
+    - data/interim/jobs.csv
+    outs:
+    - data/clean/cities.csv
+    - data/clean/clean.csv
+
+  # STAGE III
+  convert_clean_to_final:
+    cmd:
+    - rm -rf data/final || true
+    - python src/data/convert_clean_to_final.py
+    deps:
+    - src/data/convert_clean_to_final.py
+    - data/clean/clean.csv
+    outs:
+    - data/final/final.csv
+    - data/final/pipeline.pkl
+    - data/final/report.txt
