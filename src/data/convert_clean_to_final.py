@@ -49,7 +49,7 @@ def main(cfg: DictConfig) -> None:
     pipeline_save_path = os.path.join(save_dir, 'pipeline.pkl')  # noqa: F841
     pipeline.save_pipeline(pipeline_save_path)
 
-    report_save_path = os.path.join(save_dir, 'report.txt')
+    report_save_path = os.path.join(save_dir, 'report.json')
     pipeline.save_report(report_save_path)
 
     log.info('Complete')
