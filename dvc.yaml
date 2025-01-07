@@ -43,6 +43,6 @@ stages:
     - src/data/convert_clean_to_final.py
     - data/clean/clean.csv
     outs:
-    - data/final/final.csv
+    - data/final/final.parquet
     - data/final/pipeline.pkl
-    - data/final/report.txt
+    - data/final/report.json

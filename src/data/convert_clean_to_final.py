@@ -33,7 +33,7 @@ def main(cfg: DictConfig) -> None:
     data_path = str(os.path.join(PROJECT_DIR, cfg.data_path))
 
     # Read the dataset
-    df = pd.read_csv(data_path, converters=get_csv_converters())  # .sample(100)  # noqa: F841
+    df = pd.read_csv(data_path, converters=get_csv_converters())  # .sample(1000)  # noqa: F841
 
     # Load pipeline
     pipeline = set_up_pipeline()
@@ -43,8 +43,8 @@ def main(cfg: DictConfig) -> None:
 
     # Save the final dataset
     os.makedirs(save_dir, exist_ok=True)
-    data_save_path = os.path.join(save_dir, 'final.csv')  # noqa: F841
-    df.to_csv(data_save_path, index=False)
+    data_save_path = os.path.join(save_dir, 'final.parquet')  # noqa: F841
+    df.to_parquet(data_save_path, index=False)
 
     pipeline_save_path = os.path.join(save_dir, 'pipeline.pkl')  # noqa: F841
     pipeline.save_pipeline(pipeline_save_path)

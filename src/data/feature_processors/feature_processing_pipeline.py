@@ -1,7 +1,9 @@
+import json
 import logging
 import pickle
 from typing import List
 
+import numpy as np
 import pandas as pd
 
 from src.data.feature_processors.base_processor import BaseProcessor
@@ -70,41 +72,44 @@ class FeatureProcessingPipeline:
         return df
 
     def generate_report(self) -> str:
-        """Generates a YAML-like report of all processors and their parameters.
+        """Generates a JSON report of all processors and their parameters.
 
         Returns:
-            str: A YAML-like string representation of the pipeline configuration.
+            str: A JSON string representation of the pipeline configuration.
         """
 
-        def serialize(value, indent=0):
-            """Recursively converts objects into YAML-like string format with indentation."""
-            if isinstance(value, dict):
-                result = ''
-                for k, v in value.items():
-                    result += ' ' * indent + f"{k}:\n" + serialize(v, indent + 2)
-                return result
-            elif isinstance(value, list):
-                result = ''
-                for item in value:
-                    result += ' ' * indent + '- ' + serialize(item, indent + 2).lstrip()
-                return result
-            elif isinstance(value, (str, int, float, bool)):
-                return ' ' * indent + str(value) + '\n'
-            elif value is None:
-                return ' ' * indent + 'null\n'
+        def serialize(obj):
+            """Converts non-serializable objects into JSON-compatible formats."""
+            if isinstance(obj, np.ndarray):
+                return obj.tolist()  # Convert ndarray to list
+            elif isinstance(obj, set):
+                return list(obj)  # Convert set to list
+            elif isinstance(obj, (np.float32, np.float64)):
+                return float(obj)  # Convert numpy floats to Python float
+            elif isinstance(obj, (np.int32, np.int64)):
+                return int(obj)  # Convert numpy ints to Python int
+            elif isinstance(obj, (np.bool_, bool)):
+                return bool(obj)  # Convert numpy bools or native bool to Python bool
+            elif obj is None:
+                return None
+            elif isinstance(obj, dict):
+                return {k: serialize(v) for k, v in obj.items()}  # Recursively serialize dictionary
+            elif isinstance(obj, list):
+                return [serialize(v) for v in obj]  # Recursively serialize list
             else:
-                return ' ' * indent + str(value) + '\n'
+                return obj  # Return as-is if already serializable
 
-        # Build the YAML-like structure
-        report = ''
+        report = []
         for i, processor in enumerate(self.processors, start=1):
-            report += f"Processor {i}:\n"
-            report += f"  column_name: {processor.column_name}\n"
-            report += f"  processor_class: {processor.__class__.__name__}\n"
-            report += '  parameters:\n'
-            report += serialize(processor.get_params(), indent=4)
+            processor_info = {
+                'Processor': i,
+                'column_name': processor.column_name,
+                'processor_class': processor.__class__.__name__,
+                'parameters': serialize(processor.get_params()),  # Serialize parameters
+            }
+            report.append(processor_info)
 
-        return report
+        return json.dumps(report, indent=4)
 
     def save_pipeline(self, path: str) -> None:
         """Saves the FeatureProcessingPipeline object to a file using pickle.
