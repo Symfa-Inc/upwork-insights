@@ -34,7 +34,7 @@ repos:
 
 # import cleaner
 - repo: https://github.com/hadialqattan/pycln
-  rev: v2.4.0
+  rev: v2.5.0
   hooks:
   - id: pycln
     args: [--config, pyproject.toml]
@@ -49,7 +49,7 @@ repos:
 
 # ruff
 - repo: https://github.com/astral-sh/ruff-pre-commit
-  rev: 'v0.7.2'
+  rev: 'v0.8.6'
   hooks:
   - id: ruff
     args: [--fix, --exit-non-zero-on-fix]
@@ -64,7 +64,7 @@ repos:
 
 # static type checker
 - repo: https://github.com/pre-commit/mirrors-mypy
-  rev: v1.13.0
+  rev: v1.14.1
   hooks:
   - id: mypy
     args: [--config-file, pyproject.toml]
