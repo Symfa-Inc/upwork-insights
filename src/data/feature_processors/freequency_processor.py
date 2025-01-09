@@ -47,11 +47,11 @@ class FrequencyProcessor(BaseProcessor):
         """
         # Map relative frequencies to the column
         df[self.column_name] = df[self.column_name].map(self.frequency_mapping).fillna(0)
-        # TODO: README. I kept fillna(0) for the cases when we met a new class on the transformation step.
-        #  This is not required for dataset preparation, but for potential inference of the model.
-        #  Our other processors are reliable working with out of sample classes so this should be as well.
-        #  Right now it will map na -> df.isna().sum()/len(df)
-        #  out of sample new class -> 0
+        # README. I kept fillna(0) for cases where we encountered a new class in the transformation step.
+        # This is not needed for data preparation, but for possible model inference.
+        # Our other processors work reliably with out-of-sample classes, so this should work as well.
+        # For now it will map na -> df.isna().sum()/len(df)
+        # out of sample new class -> 0
 
         return df
 
