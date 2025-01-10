@@ -1,0 +1,107 @@
+schema: '2.0'
+stages:
+  convert_raw_to_int:
+    cmd:
+    - echo "\nSTAGE I\n"
+    - rm data/interim/jobs.csv || true
+    - python src/data/convert_raw_to_int.py
+    deps:
+    - path: data/raw/ADDITIONALSKILLS.csv.gz
+      hash: md5
+      md5: 68fd84565763d70f49772a443ea1f7a6
+      size: 75349567
+    - path: data/raw/COMPANIES.csv.gz
+      hash: md5
+      md5: 6d60629afe1cdf211b8480d0b733dcc1
+      size: 19945586
+    - path: data/raw/JOBS.csv.gz
+      hash: md5
+      md5: aaca25bc2d54e921914af76afbbcfbab
+      size: 245956072
+    - path: data/raw/JOB_ONTOLOGY_SKILLS.csv.gz
+      hash: md5
+      md5: 089923772f398f7f7eb1e4d95cefb48a
+      size: 25962803
+    - path: data/raw/JOB_TAGS.csv.gz
+      hash: md5
+      md5: d55ff29f507f141907ddbe0b6523d5dd
+      size: 10706957
+    - path: data/raw/OCCUPATIONS.csv.gz
+      hash: md5
+      md5: 9356b96ccf0b74076455a909b1f517f6
+      size: 11201070
+    - path: data/raw/ONTOLOGY_SKILLS.csv.gz
+      hash: md5
+      md5: a68c4233630fa40b26e865b7bb4f2eff
+      size: 173485
+    - path: data/raw/OPEN_JOBS.csv.gz
+      hash: md5
+      md5: 87e6ee7e47dadc869542b729fddba65d
+      size: 9047716
+    - path: data/raw/SEGMENTATIONDATA.csv.gz
+      hash: md5
+      md5: f59cc82adb631d0effba69dcc9bf33eb
+      size: 9958891
+    - path: data/raw/SIMILAR_JOBS.csv.gz
+      hash: md5
+      md5: 55843ceef49b503f2d3b94f1a05e27ee
+      size: 789526
+    - path: data/raw/WORK_HISTORY.csv.gz
+      hash: md5
+      md5: 6947830a1793cf3635e40a5196954fdb
+      size: 160166292
+    outs:
+    - path: data/interim/jobs.csv
+      hash: md5
+      md5: 04af4b7ab07281abeb09abfd6c157c75
+      size: 129651048
+  convert_int_to_clean:
+    cmd:
+    - echo "\nSTAGE II\n"
+    - rm -rf data/clean || true
+    - python src/data/convert_int_to_clean.py
+    deps:
+    - path: data/interim/jobs.csv
+      hash: md5
+      md5: 04af4b7ab07281abeb09abfd6c157c75
+      size: 129651048
+    - path: src/data/convert_int_to_clean.py
+      hash: md5
+      md5: 30ee4d4a56955065b5ae524fb3c643c6
+      size: 29980
+    outs:
+    - path: data/clean/cities.csv
+      hash: md5
+      md5: 07f29df980b2385ff89101b86e1503ed
+      size: 268034
+    - path: data/clean/clean.csv
+      hash: md5
+      md5: a45ccb3c63cc87bd1a24293b8d7bc22e
+      size: 96032743
+  convert_clean_to_final:
+    cmd:
+    - echo "\nSTAGE III\n"
+    - rm -rf data/final || true
+    - python src/data/convert_clean_to_final.py
+    deps:
+    - path: data/clean/clean.csv
+      hash: md5
+      md5: a45ccb3c63cc87bd1a24293b8d7bc22e
+      size: 96032743
+    - path: src/data/convert_clean_to_final.py
+      hash: md5
+      md5: f52fc21ce89757aff68088662cdcb01e
+      size: 1636
+    outs:
+    - path: data/final/final.parquet
+      hash: md5
+      md5: ac72491c70a6fe7f769422b1018c3b3c
+      size: 998418588
+    - path: data/final/pipeline.pkl
+      hash: md5
+      md5: 5a0d3bb6418114ceec44e7cc750afab6
+      size: 45756223
+    - path: data/final/report.json
+      hash: md5
+      md5: 08fdf3c39d1f34b9777243c983fe8012
+      size: 264031630

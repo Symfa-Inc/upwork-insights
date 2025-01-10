@@ -3,6 +3,7 @@ import os
 from pathlib import Path
 from typing import List, Union
 
+import numpy as np
 import pandas as pd
 
 DATASET_COLUMN_MAPPING = {
@@ -178,15 +179,38 @@ def get_csv_converters() -> dict:
               to process the column data during CSV reading.
 
     Example:
-        >>> converters = get_csv_converters()
-        >>> df = pd.read_csv("example.csv", converters=converters)
+        converters = get_csv_converters()
+        df = pd.read_csv("example.csv", converters=converters)
     """
     converters = {
         'SKILLS': safe_literal_eval,
+        'skills': safe_literal_eval,
         'TAGS': safe_literal_eval,
+        'tags': safe_literal_eval,
         'ADDITIONAL_SKILLS': safe_literal_eval,
+        'additional_skills': safe_literal_eval,
     }
     return converters
+
+
+def extract_fitted_attributes(obj) -> dict:
+    """Extracts all fitted attributes (those ending with '_') from a scikit-learn object.
+
+    Args:
+        obj: A scikit-learn transformer or estimator.
+
+    Returns:
+        dict: A dictionary of fitted attributes and their values.
+    """
+    return {
+        attr: (
+            getattr(obj, attr).tolist()
+            if isinstance(getattr(obj, attr), np.ndarray)
+            else getattr(obj, attr)
+        )
+        for attr in dir(obj)
+        if attr.replace('__', '').endswith('_') and not attr.startswith('_')
+    }
 
 
 def get_file_list(
@@ -216,6 +240,10 @@ def get_file_list(
                     all_files.append(file_path)
     all_files.sort()
     return all_files
+
+
+def normalize_to_snake_name(skill: str):
+    return skill.replace(' ', '_').lower()
 
 
 if __name__ == '__main__':
