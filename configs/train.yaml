@@ -1,0 +1,25 @@
+defaults:
+- main
+- _self_
+
+data_dir: data/final
+save_dir: models
+files:
+  final: ${data_dir}/final.parquet
+
+target_columns:
+- wh_total_hours
+- wh_total_charge
+- wh_hourly_rate
+- wh_duration
+test_size: 0.2
+random_state: 42
+
+# model config
+automl_params:
+  mode: Compete
+  ml_task: regression
+  eval_metric: mse
+  total_time_limit: 7200
+  optuna_time_budget: 180
+  explain_level: 2
