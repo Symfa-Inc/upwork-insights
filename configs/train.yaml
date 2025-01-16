@@ -2,11 +2,10 @@ defaults:
 - main
 - _self_
 
-data_path: data/final/final.parquet
+
 save_dir: models
-files:
-  data: ${data_dir}/final.parquet
-  pipeline: ${data_dir}/pipeline.pkl
+data_path: data/final/final.parquet
+pipeline_path: data/final/pipeline.pkl
 
 target_column: wh_hourly_rate # Available options: wh_total_hours, wh_total_charge, wh_hourly_rate, wh_duration
 test_size: 0.2

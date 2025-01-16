@@ -84,20 +84,21 @@ def train_model(
     automl.fit(x_train, y_train)
 
     # Inverse transform the target
-    predictions = automl.predict(x_test)
-    predictions = scaler.inverse_transform(predictions.reshape(-1, 1)).flatten()
-    y_test = scaler.inverse_transform(y_test.values.reshape(-1, 1)).flatten()
+    # TODO: use standart notation y_true/y_pred
+    y_pred = automl.predict(x_test)
+    y_pred = scaler.inverse_transform(y_pred.reshape(-1, 1)).flatten()
+    y_true = scaler.inverse_transform(y_test.values.reshape(-1, 1)).flatten()
 
     # Evaluate the model
-    mse = mean_squared_error(y_test, predictions)
-    rmse = root_mean_squared_error(y_test, predictions)
-    mae = mean_absolute_error(y_test, predictions)
-    mape = mean_absolute_percentage_error(y_test, predictions)
+    mse = mean_squared_error(y_true, y_pred)
+    rmse = root_mean_squared_error(y_true, y_pred)
+    mae = mean_absolute_error(y_true, y_pred)
+    mape = mean_absolute_percentage_error(y_true, y_pred)
     log.info(f"Target: {target}, MSE: {mse:.2f}, RMSE: {rmse:.2f}, MAE: {mae:.2f}, MAPE: {mape:.2f}")
 
     # Save predictions and evaluation
     predictions_file = os.path.join(target_save_dir, f"{target}_predictions.csv")
-    pd.DataFrame({"Actual": y_test, "Predicted": predictions}).to_csv(
+    pd.DataFrame({"Actual": y_true, "Predicted": y_pred}).to_csv(
         predictions_file, index=False
     )
     log.info(f"Predictions for target '{target}' saved to {predictions_file}.")
@@ -112,8 +113,8 @@ def main(cfg: DictConfig) -> None:
     log.info(f'Config:\n\n{OmegaConf.to_yaml(cfg)}')
 
     # Define absolute paths
-    data_path = str(os.path.join(PROJECT_DIR, cfg.files.data))
-    pipeline_path = str(os.path.join(PROJECT_DIR, cfg.files.pipeline))
+    data_path = str(os.path.join(PROJECT_DIR, cfg.data_path))
+    pipeline_path = str(os.path.join(PROJECT_DIR, cfg.pipeline_path))
     save_dir = str(os.path.join(PROJECT_DIR, cfg.save_dir))
 
     os.makedirs(save_dir, exist_ok=True)
@@ -142,3 +143,6 @@ def main(cfg: DictConfig) -> None:
 
 if __name__ == '__main__':
     main()
+
+
+# TODO: make module location_processors and move there processors that convert and impute location data
