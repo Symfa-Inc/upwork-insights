@@ -27,7 +27,10 @@ def load_dataset(file_path: str) -> pd.DataFrame:
     return df
 
 
-def load_scaler(column_name: str, pipeline_path: str) -> StandardScaler:
+def load_scaler(
+        column_name: str,
+        pipeline_path: str,
+) -> StandardScaler:
     """Load a scaler for the specified column from the saved pipeline."""
     if not column_name.startswith("wh_"):
         raise ValueError("Column name must have prefix 'wh_'.")
@@ -68,10 +71,10 @@ def train_model(
     y_train: pd.Series,
     x_test: pd.DataFrame,
     y_test: pd.Series,
-    save_dir: str,
     automl_params: dict,
     target: str,
     scaler: StandardScaler,
+    save_dir: str,
 ) -> None:
     """Train and evaluate AutoML model for the specific target variable."""
     log.info(f"Training model for target: {target}")
@@ -84,7 +87,6 @@ def train_model(
     automl.fit(x_train, y_train)
 
     # Inverse transform the target
-    # TODO: use standart notation y_true/y_pred
     y_pred = automl.predict(x_test)
     y_pred = scaler.inverse_transform(y_pred.reshape(-1, 1)).flatten()
     y_true = scaler.inverse_transform(y_test.values.reshape(-1, 1)).flatten()
@@ -123,7 +125,10 @@ def main(cfg: DictConfig) -> None:
     df = load_dataset(data_path)
 
     # Load the scaler
-    scaler = load_scaler(cfg.target_column, pipeline_path)
+    scaler = load_scaler(
+        column_name=cfg.target_column,
+        pipeline_path=pipeline_path,
+    )
 
     # Train-test split
     x_train, x_test, y_train, y_test = prepare_train_test_split(
@@ -135,7 +140,14 @@ def main(cfg: DictConfig) -> None:
 
     # Train MLJAR AutoML model
     train_model(
-        x_train, y_train, x_test, y_test, save_dir, cfg.automl_params, cfg.target_column, scaler
+        x_train=x_train,
+        y_train=y_train,
+        x_test=x_test,
+        y_test=y_test,
+        automl_params=cfg.automl_params,
+        target=cfg.target_column,
+        scaler=scaler,
+        save_dir=save_dir,
     )
 
     log.info("Training complete!")

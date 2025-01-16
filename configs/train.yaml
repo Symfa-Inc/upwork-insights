@@ -6,7 +6,6 @@ defaults:
 save_dir: models
 data_path: data/final/final.parquet
 pipeline_path: data/final/pipeline.pkl
-
 target_column: wh_hourly_rate # Available options: wh_total_hours, wh_total_charge, wh_hourly_rate, wh_duration
 test_size: 0.2
 seed: 42
