@@ -143,6 +143,3 @@ def main(cfg: DictConfig) -> None:
 
 if __name__ == '__main__':
     main()
-
-
-# TODO: make module location_processors and move there processors that convert and impute location data
