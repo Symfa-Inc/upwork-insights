@@ -28,14 +28,14 @@ def prepare_train_test_split(
         df: pd.DataFrame,
         target_column: str,
         test_size: float,
-        random_state: int,  # Default: 42
+        seed: int,  # Default: 42
 ) -> Tuple[pd.DataFrame, pd.DataFrame, pd.Series, pd.Series]:
     """Split dataset into training and testing sets, dropping columns with prefix 'wh_'."""
     log.info("Performing train-test split.")
     x = df.drop(columns=[col for col in df.columns if col.startswith('wh_')])
     y = df[target_column]  # Adjusted to handle only one target column
     x_train, x_test, y_train, y_test = train_test_split(
-        x, y, test_size=test_size, random_state=random_state
+        x, y, test_size=test_size, random_state=seed
     )
     log.info(
         f"Train-test split complete: {x_train.shape[0]} train samples, {x_test.shape[0]} test samples."
@@ -84,16 +84,19 @@ def main(cfg: DictConfig) -> None:
     log.info(f'Config:\n\n{OmegaConf.to_yaml(cfg)}')
 
     # Define absolute paths
-    data_path = cfg.files.final
-    save_dir = os.path.join(cfg.save_dir)
+    data_path = str(os.path.join(PROJECT_DIR, cfg.data_path))
+    save_dir = str(os.path.join(PROJECT_DIR, cfg.save_dir))
     os.makedirs(save_dir, exist_ok=True)
 
     # Load dataset
     df = load_dataset(data_path)
 
-    # Train-test split
+    # Split dataset into training and testing sets
     x_train, x_test, y_train, y_test = prepare_train_test_split(
-        df, cfg.target_column, cfg.test_size, cfg.random_state
+        df=df,
+        target_column=cfg.target_column,
+        test_size=cfg.test_size,
+        seed=cfg.seed,
     )
 
     # Train MLJAR AutoML model
