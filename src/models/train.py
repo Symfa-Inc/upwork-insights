@@ -1,16 +1,19 @@
 import logging
 import os
-from typing import Tuple, List
+import pickle
+from typing import Tuple
 from datetime import datetime
 
 import hydra
 import pandas as pd
 from omegaconf import DictConfig, OmegaConf
-from sklearn.metrics import mean_squared_error
+from sklearn.metrics import mean_squared_error, root_mean_squared_error, mean_absolute_error, mean_absolute_percentage_error
 from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler
 from supervised.automl import AutoML
 
 from src import PROJECT_DIR
+from src.data.feature_processors import NumericProcessor
 
 log = logging.getLogger(__name__)
 log.setLevel(logging.INFO)
@@ -22,6 +25,23 @@ def load_dataset(file_path: str) -> pd.DataFrame:
     df = pd.read_parquet(file_path)
     log.info(f"Dataset loaded with {df.shape[0]} rows and {df.shape[1]} columns.")
     return df
+
+
+def load_scaler(column_name: str, pipeline_path: str) -> StandardScaler:
+    """Load a scaler for the specified column from the saved pipeline."""
+    if not column_name.startswith("wh_"):
+        raise ValueError("Column name must have prefix 'wh_'.")
+
+    log.info(f"Loading pipeline from: {pipeline_path}")
+    with open(pipeline_path, 'rb') as file:
+        pipeline = pickle.load(file)
+
+    for processor in pipeline.processors:
+        if isinstance(processor, NumericProcessor) and processor.column_name == column_name:
+            log.info(f"Scaler for column '{column_name}' successfully loaded.")
+            return processor.scaler
+
+    raise ValueError(f"Scaler for column '{column_name}' not found in the pipeline.")
 
 
 def prepare_train_test_split(
@@ -51,6 +71,7 @@ def train_model(
     save_dir: str,
     automl_params: dict,
     target: str,
+    scaler: StandardScaler,
 ) -> None:
     """Train and evaluate AutoML model for the specific target variable."""
     log.info(f"Training model for target: {target}")
@@ -62,10 +83,17 @@ def train_model(
     automl = AutoML(results_path=target_save_dir, **automl_params)
     automl.fit(x_train, y_train)
 
-    # Evaluate the model
+    # Inverse transform the target
     predictions = automl.predict(x_test)
+    predictions = scaler.inverse_transform(predictions.reshape(-1, 1)).flatten()
+    y_test = scaler.inverse_transform(y_test.values.reshape(-1, 1)).flatten()
+
+    # Evaluate the model
     mse = mean_squared_error(y_test, predictions)
-    log.info(f"Target: {target}, MSE: {mse:.4f}")
+    rmse = root_mean_squared_error(y_test, predictions)
+    mae = mean_absolute_error(y_test, predictions)
+    mape = mean_absolute_percentage_error(y_test, predictions)
+    log.info(f"Target: {target}, MSE: {mse:.2f}, RMSE: {rmse:.2f}, MAE: {mae:.2f}, MAPE: {mape:.2f}")
 
     # Save predictions and evaluation
     predictions_file = os.path.join(target_save_dir, f"{target}_predictions.csv")
@@ -85,11 +113,15 @@ def main(cfg: DictConfig) -> None:
 
     # Define absolute paths
     data_path = cfg.files.final
+    pipeline_path = cfg.files.pipeline
     save_dir = os.path.join(cfg.save_dir)
     os.makedirs(save_dir, exist_ok=True)
 
     # Load dataset
     df = load_dataset(data_path)
+
+    # Load the scaler
+    scaler = load_scaler(cfg.target_column, pipeline_path)
 
     # Train-test split
     x_train, x_test, y_train, y_test = prepare_train_test_split(
@@ -97,7 +129,9 @@ def main(cfg: DictConfig) -> None:
     )
 
     # Train MLJAR AutoML model
-    train_model(x_train, y_train, x_test, y_test, save_dir, cfg.automl_params, cfg.target_column)
+    train_model(
+        x_train, y_train, x_test, y_test, save_dir, cfg.automl_params, cfg.target_column, scaler
+    )
 
     log.info("Training complete!")
 

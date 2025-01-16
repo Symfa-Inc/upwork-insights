@@ -6,6 +6,7 @@ data_dir: data/final
 save_dir: models
 files:
   final: ${data_dir}/final.parquet
+  pipeline: ${data_dir}/pipeline.pkl
 
 #target_column: wh_total_hours
 #target_column: wh_total_charge
