@@ -110,6 +110,9 @@ ENV/
 env.bak/
 venv.bak/
 
+# Allow .env.example to be tracked
+!.env.example
+
 # Spyder project settings
 .spyderproject
 .spyproject
