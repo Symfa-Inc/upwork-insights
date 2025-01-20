@@ -68,7 +68,7 @@ def load_tables_from_stage(cursor, stage_name: str, saving_path: str):
 
 @hydra.main(
     config_path=os.path.join(PROJECT_DIR, 'configs'),
-    config_name='load_raw',
+    config_name='load_raw_data',
     version_base=None,
 )
 def main(cfg: DictConfig) -> None:

@@ -1,12 +1,13 @@
 stages:
+
   # STAGE 0
   load_raw_data:
     cmd:
     - echo "\nSTAGE 0\n"
     - rm -rf data/raw || true
-    - python src/data/load_raw.py
+    - python src/data/load_raw_data.py
     deps:
-    - src/data/load_raw.py
+    - src/data/load_raw_data.py
     outs:
     - data/raw/ADDITIONALSKILLS.csv.gz
     - data/raw/COMPANIES.csv.gz
@@ -19,7 +20,6 @@ stages:
     - data/raw/SEGMENTATIONDATA.csv.gz
     - data/raw/SIMILAR_JOBS.csv.gz
     - data/raw/WORK_HISTORY.csv.gz
-
 
   # STAGE I
   convert_raw_to_int:
