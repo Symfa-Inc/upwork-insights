@@ -1,4 +1,26 @@
 stages:
+  # STAGE 0
+  load_raw_data:
+    cmd:
+    - echo "\nSTAGE 0\n"
+    - rm data/raw/* || true
+    - python src/data/load_raw.py
+    deps:
+    - src/data/load_raw.py
+    outs:
+    - data/raw/ADDITIONALSKILLS.csv.gz
+    - data/raw/COMPANIES.csv.gz
+    - data/raw/JOB_ONTOLOGY_SKILLS.csv.gz
+    - data/raw/JOB_TAGS.csv.gz
+    - data/raw/JOBS.csv.gz
+    - data/raw/OCCUPATIONS.csv.gz
+    - data/raw/ONTOLOGY_SKILLS.csv.gz
+    - data/raw/OPEN_JOBS.csv.gz
+    - data/raw/SEGMENTATIONDATA.csv.gz
+    - data/raw/SIMILAR_JOBS.csv.gz
+    - data/raw/WORK_HISTORY.csv.gz
+
+
   # STAGE I
   convert_raw_to_int:
     cmd:
@@ -6,6 +28,7 @@ stages:
     - rm data/interim/jobs.csv || true
     - python src/data/convert_raw_to_int.py
     deps:
+    - src/data/convert_raw_to_int.py
     - data/raw/ADDITIONALSKILLS.csv.gz
     - data/raw/COMPANIES.csv.gz
     - data/raw/JOB_ONTOLOGY_SKILLS.csv.gz
