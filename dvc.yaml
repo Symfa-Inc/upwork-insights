@@ -3,7 +3,7 @@ stages:
   load_raw_data:
     cmd:
     - echo "\nSTAGE 0\n"
-    - rm data/raw/* || true
+    - rm -rf data/raw || true
     - python src/data/load_raw.py
     deps:
     - src/data/load_raw.py
