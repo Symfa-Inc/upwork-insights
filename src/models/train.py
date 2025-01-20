@@ -7,13 +7,16 @@ from datetime import datetime
 import hydra
 import pandas as pd
 from omegaconf import DictConfig, OmegaConf
-from sklearn.metrics import mean_squared_error, root_mean_squared_error, mean_absolute_error, mean_absolute_percentage_error
+from sklearn.metrics import (
+    mean_squared_error, root_mean_squared_error, mean_absolute_error, mean_absolute_percentage_error, r2_score
+)
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 from supervised.automl import AutoML
 
 from src import PROJECT_DIR
 from src.data.feature_processors import NumericProcessor
+from src.models.utils import symmetric_mean_absolute_percentage_error
 
 log = logging.getLogger(__name__)
 log.setLevel(logging.INFO)
@@ -96,7 +99,12 @@ def train_model(
     rmse = root_mean_squared_error(y_true, y_pred)
     mae = mean_absolute_error(y_true, y_pred)
     mape = mean_absolute_percentage_error(y_true, y_pred)
-    log.info(f"Target: {target}, MSE: {mse:.2f}, RMSE: {rmse:.2f}, MAE: {mae:.2f}, MAPE: {mape:.2f}")
+    smape = symmetric_mean_absolute_percentage_error(y_true, y_pred)
+    r2 = r2_score(y_true, y_pred)
+    log.info(
+        f"Target: {target}"
+        f"MSE: {mse:.2f}, RMSE: {rmse:.2f}, MAE: {mae:.2f}, MAPE: {mape:.2f}, SMAPE: {smape:.2f}, R2: {r2:.2f}"
+    )
 
     # Save predictions and evaluation
     predictions_file = os.path.join(target_save_dir, f"{target}_predictions.csv")
