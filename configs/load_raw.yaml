@@ -1,0 +1,6 @@
+defaults:
+- main
+- _self_
+
+save_dir: data/raw
+snowflake_tmp_stage: tmp_export_stage
