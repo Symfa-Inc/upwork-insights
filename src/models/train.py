@@ -85,14 +85,18 @@ def train_model(
     target_save_dir = os.path.join(save_dir, f"{target}_{timestamp}")
     os.makedirs(target_save_dir, exist_ok=True)
 
+    # Inverse transform the target
+    y_train = scaler.inverse_transform(y_train.values.reshape(-1, 1)).flatten()
+    y_true = scaler.inverse_transform(y_test.values.reshape(-1, 1)).flatten()
+
     # Initialize and train AutoML for the specific target
     automl = AutoML(results_path=target_save_dir, **automl_params)
     automl.fit(x_train, y_train)
 
     # Inverse transform the target
     y_pred = automl.predict(x_test)
-    y_pred = scaler.inverse_transform(y_pred.reshape(-1, 1)).flatten()
-    y_true = scaler.inverse_transform(y_test.values.reshape(-1, 1)).flatten()
+    # y_pred = scaler.inverse_transform(y_pred.reshape(-1, 1)).flatten()
+    # y_true = scaler.inverse_transform(y_test.values.reshape(-1, 1)).flatten()
 
     # Evaluate the model
     mse = mean_squared_error(y_true, y_pred)
