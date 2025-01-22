@@ -159,18 +159,41 @@ def fit_dimensionality_reduction_methods(df: pd.DataFrame) -> Tuple[dict, dict]:
     try:
         # Step 1: Select a subset of size 1600
         subset_size = 1600
-        subset = embeddings[np.random.choice(embeddings.shape[0], subset_size, replace=False)]
-        # Step 2: Calculate explained variance for each number of components
-        umap_explained_variances = []
-        for n_components in range(1, max_components + 1):
-            explained_variance = calculate_umap_explained_variance(
+        subset = embeddings[
+            :subset_size,
+            :,
+        ]  # Take the first `subset_size` rows and first 1500 features
+
+        # Step 2: Validate dimensions
+        if subset.shape[0] < 2 or subset.shape[1] < 2:
+            raise ValueError('UMAP requires at least a 2D dataset with both rows and columns.')
+
+        # Step 3: Define intervals for calculating explained variance
+        intervals = (
+            list(range(2, 11))  # First 10 components (step 1)
+            + list(range(15, 101, 5))  # 15 to 100 components (step 5)
+            + list(range(110, 501, 50))  # 110 to 500 components (step 10)
+            + list(range(600, max_components + 1, 100))  # 600+ components (step 100)
+        )
+        log.info(f"Intervals for UMAP: {intervals}")
+
+        # Step 4: Calculate explained variance for specified intervals
+        cumulative_variances_umap = []
+        for n_components in intervals:
+            cumulative_variance = calculate_umap_explained_variance(
                 subset,
                 n_components=n_components,
             )
-            umap_explained_variances.append(explained_variance)
-        # Step 3: Save results to explained_variances and cumulative_variances
-        explained_variances['UMAP'] = np.array(umap_explained_variances)
-        cumulative_variances['UMAP'] = np.cumsum(umap_explained_variances)
+            cumulative_variances_umap.append(cumulative_variance)
+
+        # Step 5: Compute explained variance for each interval
+        explained_variances_umap = np.diff(
+            [0] + cumulative_variances_umap,
+        )  # Derive incremental variance
+
+        # Step 6: Save results
+        explained_variances['UMAP'] = explained_variances_umap
+        cumulative_variances['UMAP'] = cumulative_variances_umap
 
     except ValueError as e:
         logging.error(f"Error with UMAP: {e}")
@@ -205,7 +228,15 @@ def visualize_variances(
     # Subplot 1: Explained Variance Decay
     plt.subplot(1, 2, 1)
     for name, variance in explained_variances.items():
-        plt.plot(range(1, len(variance) + 1), variance * 100, label=name)
+        intervals = list(range(1, len(variance) + 1))
+        if name == 'UMAP':
+            intervals = (
+                list(range(2, 11))  # First 10 components (step 1)
+                + list(range(15, 101, 5))  # 15 to 100 components (step 5)
+                + list(range(110, 501, 50))  # 110 to 500 components (step 10)
+                + list(range(600, 1500 + 1, 100))  # 600+ components (step 100)
+            )
+        plt.plot(intervals, variance * 100, label=name)
     plt.xlabel('Number of Components')
     plt.ylabel('Explained Variance (%)')
     plt.title(f"Explained Variance Decay ({feature_name})")
@@ -214,8 +245,17 @@ def visualize_variances(
     # Subplot 2: Cumulative Variance
     plt.subplot(1, 2, 2)
     for name, cumulative_variance in cumulative_variances.items():
-        plt.plot(range(1, len(cumulative_variance) + 1), cumulative_variance * 100, label=name)
+        intervals = list(range(1, len(cumulative_variance) + 1))
+        if name == 'UMAP':
+            intervals = (
+                list(range(2, 11))  # First 10 components (step 1)
+                + list(range(15, 101, 5))  # 15 to 100 components (step 5)
+                + list(range(110, 501, 50))  # 110 to 500 components (step 10)
+                + list(range(600, 1500 + 1, 100))  # 600+ components (step 100)
+            )
+        plt.plot(intervals, cumulative_variance * 100, label=name)
     plt.axhline(80, color='red', linestyle='--', label='80% Threshold')
+
     if best_method:
         best_components = np.argmax(cumulative_variances[best_method] >= 0.8) + 1
         plt.axvline(best_components, color='blue', linestyle='--', label=f"Best ({best_method})")
