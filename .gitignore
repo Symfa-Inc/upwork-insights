@@ -163,6 +163,7 @@ data/raw*/
 data/interim*/
 data/final*/
 data/clean*/
+data/embeddings*/
 
 # Models
 /models/*/
