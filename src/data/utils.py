@@ -5,6 +5,11 @@ from typing import List, Union
 
 import numpy as np
 import pandas as pd
+from dotenv import load_dotenv
+from openai import OpenAI
+
+load_dotenv()
+openai_client = OpenAI()
 
 DATASET_COLUMN_MAPPING = {
     # General information
@@ -244,6 +249,31 @@ def get_file_list(
 
 def normalize_to_snake_name(skill: str):
     return skill.replace(' ', '_').lower()
+
+
+def get_embeddings(
+    texts: List[str],
+    batch_size: int = 1000,
+    model: str = 'text-embedding-3-large',
+) -> np.ndarray:
+    """Generates embeddings for a list of strings using OpenAI's API.
+
+    Args:
+        texts (List[str]): A list of strings to generate embeddings for.
+        batch_size (int): The size of the batches for API requests. Defaults to 1000.
+        model (str): The OpenAI model to use for generating embeddings. Defaults to 'text-embedding-3-large'.
+
+    Returns:
+        np.ndarray: A numpy array of embeddings.
+    """
+    cleaned_texts = [text if isinstance(text, str) and text != '' else 'Missing' for text in texts]
+    embeddings = []
+
+    for i in range(0, len(cleaned_texts), batch_size):
+        batch = cleaned_texts[i : i + batch_size]
+        response = openai_client.embeddings.create(input=batch, model=model)
+        embeddings.extend([res.embedding for res in response.data])
+    return np.array(embeddings)
 
 
 if __name__ == '__main__':

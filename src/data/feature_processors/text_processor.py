@@ -2,14 +2,10 @@ from typing import List
 
 import numpy as np
 import pandas as pd
-from dotenv import load_dotenv
-from openai import OpenAI
 from sklearn.decomposition import PCA
 
 from src.data.feature_processors.base_processor import BaseProcessor
-
-load_dotenv()
-openai_client = OpenAI()
+from src.data.utils import get_embeddings
 
 
 class TextProcessor(BaseProcessor):
@@ -61,15 +57,7 @@ class TextProcessor(BaseProcessor):
         Returns:
             np.ndarray: A numpy array of embeddings.
         """
-        cleaned_texts = [text if isinstance(text, str) else 'Missing' for text in texts]
-        embeddings = []
-
-        for i in range(0, len(texts), batch_size):
-            batch = cleaned_texts[i : i + batch_size]
-            response = openai_client.embeddings.create(input=batch, model=model)
-            embeddings.extend([res.embedding for res in response.data])
-
-        return np.array(embeddings)
+        return get_embeddings(texts, batch_size, model)
 
     def _fit(self, df: pd.DataFrame):
         """Fits the processor by generating embeddings, scaling them, applying PCA.
@@ -143,6 +131,7 @@ if __name__ == '__main__':
                 'This is the first test sentence.',
                 'Here is another example for testing.',
                 'Machine learning with embeddings is powerful.',
+                '',
                 'OpenAI API provides useful tools.',
                 'Testing the PCA transformation process.',
             ],
@@ -150,6 +139,7 @@ if __name__ == '__main__':
                 'This is the first test sentence.',
                 'Here is another example for testing.',
                 'Machine learning with embeddings is powerful.',
+                '',
                 'OpenAI API provides useful tools.',
                 'Testing the PCA transformation process.',
             ],
