@@ -9,7 +9,6 @@ from dotenv import load_dotenv
 from openai import OpenAI
 
 load_dotenv()
-openai_client = OpenAI()
 
 DATASET_COLUMN_MAPPING = {
     # General information
@@ -269,6 +268,7 @@ def get_embeddings(
     cleaned_texts = [text if isinstance(text, str) and text != '' else 'Missing' for text in texts]
     embeddings = []
 
+    openai_client = OpenAI()
     for i in range(0, len(cleaned_texts), batch_size):
         batch = cleaned_texts[i : i + batch_size]
         response = openai_client.embeddings.create(input=batch, model=model)
