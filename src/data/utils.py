@@ -1,5 +1,7 @@
 import ast
+import logging
 import os
+import pickle
 from pathlib import Path
 from typing import List, Union
 
@@ -9,6 +11,7 @@ from dotenv import load_dotenv
 from openai import OpenAI
 
 load_dotenv()
+log = logging.getLogger()
 
 DATASET_COLUMN_MAPPING = {
     # General information
@@ -274,6 +277,28 @@ def get_embeddings(
         response = openai_client.embeddings.create(input=batch, model=model)
         embeddings.extend([res.embedding for res in response.data])
     return np.array(embeddings)
+
+
+def save_model_to_pickle(model, model_path: str):
+    """Save a model to a pickle file."""
+    try:
+        with open(model_path, 'wb') as f:
+            pickle.dump(model, f)
+        log.info(f"Model saved to {model_path}")
+    except Exception as e:
+        log.error(f"Failed to save model to {model_path}: {e}")
+
+
+def load_model_from_pickle(model_path: str):
+    """Load a model from a pickle file."""
+    try:
+        with open(model_path, 'rb') as f:
+            model = pickle.load(f)
+        log.info(f"Model loaded from {model_path}")
+        return model
+    except Exception as e:
+        log.error(f"Failed to load model from {model_path}: {e}")
+        return None
 
 
 if __name__ == '__main__':
