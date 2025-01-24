@@ -51,7 +51,7 @@ def main(cfg: DictConfig) -> None:
     missing_columns = [
         column
         for column in text_columns
-        if not os.path.exists(os.path.join(embeddings_path, f"{column}_thenlper/gte-large.parquet"))
+        if not os.path.exists(os.path.join(embeddings_path, f"{column}_gte-large.parquet"))
     ]
 
     if missing_columns:
@@ -65,18 +65,18 @@ def main(cfg: DictConfig) -> None:
         )
 
     methods = {
-        'PCA': PCA(n_components=3072),
+        'PCA': PCA(n_components=1024),
         'PCAWithPreProcessing (normalize)': PCAWithPreProcessing(
-            n_components=3072,
+            n_components=1024,
             preprocessing_method='normalize',
         ),
         'PCAWithPreProcessing (standardize)': PCAWithPreProcessing(
-            n_components=3072,
+            n_components=1024,
             preprocessing_method='standardize',
         ),
     }
     for column in text_columns:
-        df = pd.read_parquet(os.path.join(embeddings_path, f"{column}_thenlper/gte-large.parquet"))
+        df = pd.read_parquet(os.path.join(embeddings_path, f"{column}_gte-large.parquet"))
         explained_variances, cumulative_variances = fit_dimensionality_reduction_methods(
             df,
             column,

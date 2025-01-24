@@ -45,6 +45,7 @@ def calculate_and_save_embeddings(
 
     # Ensure output directory exists
     os.makedirs(output_dir, exist_ok=True)
+    model_name = model.split('/')[-1]
 
     for column in text_columns:
         log.info(f"Processing embeddings for column: {column}")
@@ -63,7 +64,7 @@ def calculate_and_save_embeddings(
         embeddings_df.reset_index(inplace=True)
 
         # Save the DataFrame to Parquet, preserving the index
-        output_file = os.path.join(output_dir, f"{column}_{model}.parquet")
+        output_file = os.path.join(output_dir, f"{column}_{model_name}.parquet")
         embeddings_df.to_parquet(output_file, index=True)
         log.info(f"Saved embeddings to {output_file}")
 
