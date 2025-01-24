@@ -7,8 +7,11 @@ from typing import List, Union
 
 import numpy as np
 import pandas as pd
+import torch
 from dotenv import load_dotenv
 from openai import OpenAI
+from tqdm import tqdm
+from transformers import AutoModel, AutoTokenizer
 
 load_dotenv()
 log = logging.getLogger()
@@ -299,6 +302,71 @@ def load_model_from_pickle(model_path: str):
     except Exception as e:
         log.error(f"Failed to load model from {model_path}: {e}")
         return None
+
+
+def get_embeddings_gte(
+    texts: List[str],
+    batch_size: int = 1000,
+    model: str = 'thenlper/gte-large',
+) -> np.ndarray:
+    """Generates embeddings for a list of strings using the gte-large model from Hugging Face.
+
+    Args:
+        texts (List[str]): A list of strings to generate embeddings for.
+        batch_size (int): The size of the batches for inference. Defaults to 1000.
+        model (str): The Hugging Face model to use for generating embeddings. Defaults to 'thenlper/gte-large'.
+
+    Returns:
+        np.ndarray: A numpy array of embeddings.
+    """
+    # Load the tokenizer and model
+    try:
+        tokenizer = AutoTokenizer.from_pretrained(model)
+        model_ = AutoModel.from_pretrained(model)
+        log.info(f"Successfully loaded model '{model}' and tokenizer.")
+    except Exception as e:
+        log.error(f"Failed to load model '{model}': {e}")
+        raise
+
+    # Attempt to use the best available device
+    device = torch.device('cpu')
+    if torch.backends.mps.is_available():
+        device = torch.device('mps')
+    if torch.cuda.is_available():
+        device = torch.device('cuda')
+
+    log.info(f"Using device: {device}")
+    model_ = model_.to(device)
+
+    # Ensure texts are non-empty strings
+    cleaned_texts = [
+        text if isinstance(text, str) and text.strip() != '' else 'Missing' for text in texts
+    ]
+
+    # List to store embeddings
+    embeddings = []
+
+    # Process texts in batches with a progress bar
+    for i in tqdm(range(0, len(cleaned_texts), batch_size), desc='Processing batches'):
+        batch = cleaned_texts[i : i + batch_size]
+        tokens = tokenizer(
+            batch,
+            padding=True,
+            truncation=True,
+            max_length=512,
+            return_tensors='pt',
+        )
+
+        tokens = {key: value.to(device) for key, value in tokens.items()}
+
+        with torch.no_grad():
+            # Forward pass through the model
+            outputs = model_(**tokens)
+            # Use the CLS token embeddings for sentence-level representation
+            batch_embeddings = outputs.last_hidden_state[:, 0, :].cpu().numpy()
+            embeddings.extend(batch_embeddings)
+
+    return np.array(embeddings)
 
 
 if __name__ == '__main__':
