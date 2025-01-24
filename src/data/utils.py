@@ -328,16 +328,6 @@ def get_embeddings_gte(
         log.error(f"Failed to load model '{model}': {e}")
         raise
 
-    # Attempt to use the best available device
-    device = torch.device('cpu')
-    if torch.backends.mps.is_available():
-        device = torch.device('mps')
-    if torch.cuda.is_available():
-        device = torch.device('cuda')
-
-    log.info(f"Using device: {device}")
-    model_ = model_.to(device)
-
     # Ensure texts are non-empty strings
     cleaned_texts = [
         text if isinstance(text, str) and text.strip() != '' else 'Missing' for text in texts
@@ -346,25 +336,46 @@ def get_embeddings_gte(
     # List to store embeddings
     embeddings = []
 
-    # Process texts in batches with a progress bar
-    for i in tqdm(range(0, len(cleaned_texts), batch_size), desc='Processing batches'):
-        batch = cleaned_texts[i : i + batch_size]
-        tokens = tokenizer(
-            batch,
-            padding=True,
-            truncation=True,
-            max_length=512,
-            return_tensors='pt',
-        )
+    # Attempt to use the best available device
+    device = torch.device('cpu')
+    if torch.backends.mps.is_available():
+        torch.mps.empty_cache()
+        device = torch.device('mps')
+    if torch.cuda.is_available():
+        torch.cuda.empty_cache()
+        device = torch.device('cuda')
 
-        tokens = {key: value.to(device) for key, value in tokens.items()}
+    log.info(f"Using device: {device}")
+    try:
+        model_ = model_.to(device)
 
-        with torch.no_grad():
-            # Forward pass through the model
-            outputs = model_(**tokens)
-            # Use the CLS token embeddings for sentence-level representation
-            batch_embeddings = outputs.last_hidden_state[:, 0, :].cpu().numpy()
-            embeddings.extend(batch_embeddings)
+        # Process texts in batches with a progress bar
+        for i in tqdm(range(0, len(cleaned_texts), batch_size), desc='Processing batches'):
+            batch = cleaned_texts[i : i + batch_size]
+            tokens = tokenizer(
+                batch,
+                padding=True,
+                truncation=True,
+                max_length=512,
+                return_tensors='pt',
+            )
+
+            tokens = {key: value.to(device) for key, value in tokens.items()}
+
+            with torch.no_grad():
+                # Forward pass through the model
+                outputs = model_(**tokens)
+                # Use the CLS token embeddings for sentence-level representation
+                batch_embeddings = outputs.last_hidden_state[:, 0, :].cpu().numpy()
+                embeddings.extend(batch_embeddings)
+
+    finally:
+        # Clean up resources
+        if torch.cuda.is_available():
+            torch.mps.empty_cache()
+        if torch.backends.mps.is_available():
+            torch.cuda.empty_cache()
+        log.info('Released GPU resources.')
 
     return np.array(embeddings)
 
