@@ -4,7 +4,7 @@ defaults:
 
 data_path: data/clean/clean.csv
 embeddings_path: data/embeddings
-save_dir: eval/embeddings_dimensionality_reduction
+save_dir: eval/embeddings_dimensionality_reduction_openai
 text_columns:
 - title
 - description

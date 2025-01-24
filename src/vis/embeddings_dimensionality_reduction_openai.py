@@ -38,6 +38,7 @@ def calculate_and_save_embeddings(
     id_column: str = 'id',
     batch_size: int = 1000,
     model='text-embedding-3-large',
+    model_function=get_embeddings,
 ):
     # Load the dataset
     df = pd.read_csv(input_path, usecols=[id_column] + text_columns, index_col=id_column)
@@ -52,7 +53,7 @@ def calculate_and_save_embeddings(
         texts = df[column].tolist()
 
         # Generate embeddings
-        embeddings = get_embeddings(texts, batch_size=batch_size, model=model)
+        embeddings = model_function(texts, batch_size=batch_size, model=model)
 
         # Create a DataFrame for embeddings
         embedding_columns = [f"EMBEDDING_{i + 1}" for i in range(embeddings.shape[1])]
@@ -62,7 +63,7 @@ def calculate_and_save_embeddings(
         embeddings_df.reset_index(inplace=True)
 
         # Save the DataFrame to Parquet, preserving the index
-        output_file = os.path.join(output_dir, f"{column}_embeddings.parquet")
+        output_file = os.path.join(output_dir, f"{column}_{model}.parquet")
         embeddings_df.to_parquet(output_file, index=True)
         log.info(f"Saved embeddings to {output_file}")
 
@@ -209,7 +210,7 @@ def visualize_variances(
 
 @hydra.main(
     config_path=os.path.join(PROJECT_DIR, 'configs'),
-    config_name='embeddings_dimensionality_reduction',
+    config_name='embeddings_dimensionality_reduction_openai',
     version_base=None,
 )
 def main(cfg: DictConfig) -> None:
@@ -225,7 +226,9 @@ def main(cfg: DictConfig) -> None:
     missing_columns = [
         column
         for column in text_columns
-        if not os.path.exists(os.path.join(embeddings_path, f"{column}_embeddings.parquet"))
+        if not os.path.exists(
+            os.path.join(embeddings_path, f"{column}_text-embedding-3-large.parquet"),
+        )
     ]
 
     if missing_columns:
@@ -243,14 +246,16 @@ def main(cfg: DictConfig) -> None:
         ),
     }
     for column in text_columns:
-        df = pd.read_parquet(os.path.join(embeddings_path, f'{column}_embeddings.parquet'))
+        df = pd.read_parquet(
+            os.path.join(embeddings_path, f"{column}_text-embedding-3-large.parquet"),
+        )
         explained_variances, cumulative_variances = fit_dimensionality_reduction_methods(
             df,
             column,
             methods,
             save_dir,
         )
-        save_path = os.path.join(embeddings_path, f'explained_variance_decay_{column}.png')
+        save_path = os.path.join(save_dir, f'explained_variance_decay_{column}.png')
         visualize_variances(
             explained_variances,
             cumulative_variances,
