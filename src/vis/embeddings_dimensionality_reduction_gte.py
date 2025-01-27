@@ -59,7 +59,7 @@ def main(cfg: DictConfig) -> None:
             data_path,
             embeddings_path,
             missing_columns,
-            batch_size=500,
+            batch_size=100,
             model='thenlper/gte-large',
             model_function=get_embeddings_gte,
         )

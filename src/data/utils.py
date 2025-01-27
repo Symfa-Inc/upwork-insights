@@ -369,6 +369,12 @@ def get_embeddings_gte(
                 batch_embeddings = outputs.last_hidden_state[:, 0, :].cpu().numpy()
                 embeddings.extend(batch_embeddings)
 
+            # Clear cache to release memory
+            if device.type == 'cuda':
+                torch.cuda.empty_cache()
+            elif device.type == 'mps':
+                torch.mps.empty_cache()
+
     finally:
         # Clean up resources
         if torch.cuda.is_available():
