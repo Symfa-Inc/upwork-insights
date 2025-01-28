@@ -1,6 +1,6 @@
 import logging
 import os
-from typing import Dict, List, Tuple, Union
+from typing import Dict, List, Tuple, Type, Union
 
 import hydra
 import matplotlib.pyplot as plt
@@ -72,7 +72,7 @@ def calculate_and_save_embeddings(
 def fit_dimensionality_reduction_methods(
     df: pd.DataFrame,
     feature_name: str,
-    methods: Dict[str, Union[PCA, KernelPCA, PCAWithPreProcessing]],
+    methods: Dict[str, Tuple[Type[Union[PCA, KernelPCA, PCAWithPreProcessing]], dict]],
     save_dir: str,
 ) -> Tuple[dict, dict]:
     """Fit dimensionality reduction methods and save/load models as pickles."""
@@ -85,7 +85,7 @@ def fit_dimensionality_reduction_methods(
 
     os.makedirs(save_dir, exist_ok=True)
 
-    for name, method in methods.items():
+    for name, (method_class, params) in methods.items():
         model_path = os.path.join(save_dir, f"{name}_{feature_name}_{sample_size}.pkl")
         if os.path.exists(model_path):
             method = load_model_from_pickle(model_path)
@@ -95,6 +95,7 @@ def fit_dimensionality_reduction_methods(
         else:
             log.info(f"Fitting method {name}")
             try:
+                method = method_class(**params)
                 method.fit(embeddings)
                 save_model_to_pickle(method, model_path)
             except ValueError as e:
@@ -235,15 +236,15 @@ def main(cfg: DictConfig) -> None:
     if missing_columns:
         calculate_and_save_embeddings(data_path, embeddings_path, missing_columns)
 
-    methods = {
-        'PCA': PCA(n_components=3072),
-        'PCAWithPreProcessing (normalize)': PCAWithPreProcessing(
-            n_components=3072,
-            preprocessing_method='normalize',
+    methods: Dict[str, Tuple[Type[Union[PCA, KernelPCA, PCAWithPreProcessing]], dict]] = {
+        'PCA': (PCA, dict(n_components=3072)),
+        'PCAWithPreProcessing (normalize)': (
+            PCAWithPreProcessing,
+            dict(n_components=3072, preprocessing_method='normalize'),
         ),
-        'PCAWithPreProcessing (standardize)': PCAWithPreProcessing(
-            n_components=3072,
-            preprocessing_method='standardize',
+        'PCAWithPreProcessing (standardize)': (
+            PCAWithPreProcessing,
+            dict(n_components=3072, preprocessing_method='standardize'),
         ),
     }
     for column in text_columns:

@@ -11,3 +11,4 @@ text_columns:
 - company_name
 - company_description
 - company_summary
+embeddings_model_url: thenlper/gte-large

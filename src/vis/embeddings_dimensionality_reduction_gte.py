@@ -1,10 +1,11 @@
 import logging
 import os
+from typing import Dict, Tuple, Type, Union
 
 import hydra
 import pandas as pd
 from omegaconf import DictConfig, OmegaConf
-from sklearn.decomposition import PCA
+from sklearn.decomposition import PCA, KernelPCA
 
 from src import PROJECT_DIR
 from src.data.feature_processors.ppa import PCAWithPreProcessing
@@ -46,12 +47,14 @@ def main(cfg: DictConfig) -> None:
     embeddings_path = str(os.path.join(PROJECT_DIR, cfg.embeddings_path))
     save_dir = str(os.path.join(PROJECT_DIR, cfg.save_dir))
     os.makedirs(save_dir, exist_ok=True)
+    embeddings_model_url = cfg.embeddings_model_url
+    embeddings_model = embeddings_model_url.split('/')[-1]
 
     text_columns = cfg.text_columns
     missing_columns = [
         column
         for column in text_columns
-        if not os.path.exists(os.path.join(embeddings_path, f"{column}_gte-large.parquet"))
+        if not os.path.exists(os.path.join(embeddings_path, f"{column}_{embeddings_model}.parquet"))
     ]
 
     if missing_columns:
@@ -60,23 +63,23 @@ def main(cfg: DictConfig) -> None:
             embeddings_path,
             missing_columns,
             batch_size=100,
-            model='thenlper/gte-large',
+            model=embeddings_model_url,
             model_function=get_embeddings_gte,
         )
 
-    methods = {
-        'PCA': PCA(n_components=1024),
-        'PCAWithPreProcessing (normalize)': PCAWithPreProcessing(
-            n_components=1024,
-            preprocessing_method='normalize',
+    methods: Dict[str, Tuple[Type[Union[PCA, KernelPCA, PCAWithPreProcessing]], dict]] = {
+        'PCA': (PCA, dict(n_components=1024)),
+        'PCAWithPreProcessing (normalize)': (
+            PCAWithPreProcessing,
+            dict(n_components=1024, preprocessing_method='normalize'),
         ),
-        'PCAWithPreProcessing (standardize)': PCAWithPreProcessing(
-            n_components=1024,
-            preprocessing_method='standardize',
+        'PCAWithPreProcessing (standardize)': (
+            PCAWithPreProcessing,
+            dict(n_components=1024, preprocessing_method='standardize'),
         ),
     }
     for column in text_columns:
-        df = pd.read_parquet(os.path.join(embeddings_path, f"{column}_gte-large.parquet"))
+        df = pd.read_parquet(os.path.join(embeddings_path, f"{column}_{embeddings_model}.parquet"))
         explained_variances, cumulative_variances = fit_dimensionality_reduction_methods(
             df,
             column,
