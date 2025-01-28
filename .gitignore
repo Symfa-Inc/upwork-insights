@@ -165,9 +165,12 @@ data/final*/
 data/clean*/
 data/embeddings*/
 
+# Evaluation
+eval/embeddings*/
+
 # Models
 /models/*/
 *.pth
 
 # W&B
-/wandb/
+wandb/
