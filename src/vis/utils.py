@@ -164,26 +164,49 @@ def fit_clustering_methods(
 
     wcss_scores = {}
 
-    for name, (method_class, params) in methods.items():
+    for method_name, (method_class, params) in methods.items():
         method_wcss = []
-        method_path = os.path.join(save_dir, f"{name}_{feature_name}.pkl")
 
-        log.info(f"Evaluating clustering method: {name}")
+        # Create a directory for the method to save all k's pickles
+        method_dir = os.path.join(save_dir, f"{method_name}_{feature_name}")
+        os.makedirs(method_dir, exist_ok=True)
+
+        log.info(f"Evaluating clustering method {method_name} for the feature {feature_name}")
         for k in range(1, max_k + 1):
+            model_path = os.path.join(method_dir, f"{method_name}_{feature_name}_k_{k}.pkl")
+
+            # Try to load the model if it exists
+            if os.path.exists(model_path):
+                log.info(f"Loading pre-fitted model for {method_name} with k={k} from {model_path}")
+                clustering_model = load_model_from_pickle(model_path)
+                if clustering_model is None:
+                    log.warning(f"Failed to load model for {method_name} with k={k}. Refitting...")
+                else:
+                    # If model is loaded, append WCSS and skip fitting
+                    wcss = clustering_model.inertia_
+                    method_wcss.append(wcss)
+                    continue
+
+            # If model does not exist or loading failed, fit and save
             try:
                 params['n_clusters'] = k
                 clustering_model = method_class(**params)
                 clustering_model.fit(embeddings)
-                wcss = clustering_model.inertia_  # Inertia is WCSS in KMeans
+
+                # Compute WCSS (Inertia)
+                wcss = clustering_model.inertia_
                 method_wcss.append(wcss)
 
-                if k == max_k:  # Save the model for the best k after evaluation
-                    save_model_to_pickle(clustering_model, method_path)
+                # Save the model for the current k
+                save_model_to_pickle(clustering_model, model_path)
+
             except Exception as e:
-                log.error(f"Error with method {name} and k={k}: {e}")
+                log.error(f"Error with method {method_name} and k={k}: {e}")
                 continue
 
-        wcss_scores[name] = method_wcss
+        # Store WCSS scores for the method
+        wcss_scores[method_name] = method_wcss
+
     return wcss_scores
 
 
@@ -291,16 +314,27 @@ def visualize_clustering_elbow(
     # Calculate the best k values
     best_k_values = calculate_best_k(wcss_scores)
 
+    # Find the best method (smallest best k)
+    best_method = min(best_k_values, key=best_k_values.get)
+    best_k = best_k_values[best_method]
+
     plt.figure(figsize=(10, 6))
 
+    # Plot all methods
     for name, wcss in wcss_scores.items():
-        best_k = best_k_values[name]
         plt.plot(
             range(1, len(wcss) + 1),
             wcss,
-            label=f"{name} (Best k={best_k})",
+            label=f"{name} (Best k={best_k_values[name]})",
         )
-        plt.axvline(best_k, linestyle='--', label=f"Best {name} k={best_k}")
+
+    # Highlight the best method with a vertical line
+    plt.axvline(
+        best_k,
+        color='red',
+        linestyle='--',
+        label=f"Best Method: {best_method} (k={best_k})",
+    )
 
     plt.xlabel('Number of Clusters (k)')
     plt.ylabel('WCSS (Inertia)')

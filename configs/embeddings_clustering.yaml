@@ -7,5 +7,5 @@ data_path: data/clean/clean.csv
 embeddings_path: data/embeddings
 save_dir: eval/embeddings_clustering_
 
-embeddings_model_url: text-embedding-3-small
+embeddings_model_url: thenlper/gte-small
 # other options thenlper/gte-small, thenlper/gte-large, text-embedding-3-small, text-embedding-3-large
