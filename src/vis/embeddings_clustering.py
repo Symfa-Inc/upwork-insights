@@ -9,6 +9,7 @@ from sklearn.cluster import KMeans, MiniBatchKMeans
 from src import PROJECT_DIR
 from src.data.utils import get_embeddings, get_embeddings_gte
 from src.vis.utils import (
+    CosineKMeans,
     calculate_and_save_embeddings,
     fit_clustering_methods,
     log,
@@ -56,10 +57,22 @@ def main(cfg: DictConfig) -> None:
             model_function=embeddings_function,
         )
 
+    # Define the pipeline for KMeans with cosine distance
+
     # Define clustering methods
     methods: Dict[str, Tuple[Type[KMeans], dict]] = {
+        # Standard KMeans with default algorithm
         'KMeans': (KMeans, dict(random_state=42)),
+        # KMeans with 'elkan' algorithm (optimized for Euclidean distance)
+        'KMeans (Elkan)': (KMeans, dict(random_state=42, algorithm='elkan')),
+        # MiniBatch KMeans for faster computations on large datasets
         'MiniBatchKMeans': (MiniBatchKMeans, dict(random_state=42)),
+        # KMeans with Cosine Distance
+        'KMeans (Cosine)': (CosineKMeans, dict(random_state=42)),
+        # KMeans with Cosine Distance and alternative algorithm ('lloyd')
+        'KMeans (Cosine, Lloyd)': (CosineKMeans, dict(random_state=42, algorithm='lloyd')),
+        # Bisecting KMeans for recursive splitting
+        'BisectingKMeans': (KMeans, dict(random_state=42, n_init=10)),
     }
 
     for column in text_columns:
