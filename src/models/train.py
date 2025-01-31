@@ -1,0 +1,169 @@
+import logging
+import os
+import pickle
+from typing import Tuple
+from datetime import datetime
+
+import hydra
+import pandas as pd
+from omegaconf import DictConfig, OmegaConf
+from sklearn.metrics import (
+    mean_squared_error, root_mean_squared_error, mean_absolute_error, mean_absolute_percentage_error, r2_score
+)
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler
+from supervised.automl import AutoML
+
+from src import PROJECT_DIR
+from src.data.feature_processors import NumericProcessor
+from src.models.utils import symmetric_mean_absolute_percentage_error
+
+log = logging.getLogger(__name__)
+log.setLevel(logging.INFO)
+
+
+def load_dataset(file_path: str) -> pd.DataFrame:
+    """Load dataset from a parquet file."""
+    log.info(f"Loading dataset from: {file_path}")
+    df = pd.read_parquet(file_path)
+    log.info(f"Dataset loaded with {df.shape[0]} rows and {df.shape[1]} columns.")
+    return df
+
+
+def load_scaler(
+        column_name: str,
+        pipeline_path: str,
+) -> StandardScaler:
+    """Load a scaler for the specified column from the saved pipeline."""
+    if not column_name.startswith("wh_"):
+        raise ValueError("Column name must have prefix 'wh_'.")
+
+    log.info(f"Loading pipeline from: {pipeline_path}")
+    with open(pipeline_path, 'rb') as file:
+        pipeline = pickle.load(file)
+
+    for processor in pipeline.processors:
+        if isinstance(processor, NumericProcessor) and processor.column_name == column_name:
+            log.info(f"Scaler for column '{column_name}' successfully loaded.")
+            return processor.scaler
+
+    raise ValueError(f"Scaler for column '{column_name}' not found in the pipeline.")
+
+
+def prepare_train_test_split(
+        df: pd.DataFrame,
+        target_column: str,
+        test_size: float,
+        seed: int,  # Default: 42
+) -> Tuple[pd.DataFrame, pd.DataFrame, pd.Series, pd.Series]:
+    """Split dataset into training and testing sets, dropping columns with prefix 'wh_'."""
+    log.info("Performing train-test split.")
+    x = df.drop(columns=[col for col in df.columns if col.startswith('wh_')])
+    y = df[target_column]  # Adjusted to handle only one target column
+    x_train, x_test, y_train, y_test = train_test_split(
+        x, y, test_size=test_size, random_state=seed
+    )
+    log.info(
+        f"Train-test split complete: {x_train.shape[0]} train samples, {x_test.shape[0]} test samples."
+    )
+    return x_train, x_test, y_train, y_test
+
+
+def train_model(
+    x_train: pd.DataFrame,
+    y_train: pd.Series,
+    x_test: pd.DataFrame,
+    y_test: pd.Series,
+    automl_params: dict,
+    target: str,
+    scaler: StandardScaler,
+    save_dir: str,
+) -> None:
+    """Train and evaluate AutoML model for the specific target variable."""
+    log.info(f"Training model for target: {target}")
+    timestamp = datetime.now().strftime("%H%M_%d%m%Y")
+    target_save_dir = os.path.join(save_dir, f"{target}_{timestamp}")
+    os.makedirs(target_save_dir, exist_ok=True)
+
+    # Inverse transform the target
+    y_train = scaler.inverse_transform(y_train.values.reshape(-1, 1)).flatten()
+    y_true = scaler.inverse_transform(y_test.values.reshape(-1, 1)).flatten()
+
+    # Initialize and train AutoML for the specific target
+    automl = AutoML(results_path=target_save_dir, **automl_params)
+    automl.fit(x_train, y_train)
+
+    # Inverse transform the target
+    y_pred = automl.predict(x_test)
+    # y_pred = scaler.inverse_transform(y_pred.reshape(-1, 1)).flatten()
+    # y_true = scaler.inverse_transform(y_test.values.reshape(-1, 1)).flatten()
+
+    # Evaluate the model
+    mse = mean_squared_error(y_true, y_pred)
+    rmse = root_mean_squared_error(y_true, y_pred)
+    mae = mean_absolute_error(y_true, y_pred)
+    mape = mean_absolute_percentage_error(y_true, y_pred)
+    smape = symmetric_mean_absolute_percentage_error(y_true, y_pred)
+    r2 = r2_score(y_true, y_pred)
+    log.info(
+        f"Target: {target}"
+        f"MSE: {mse:.2f}, RMSE: {rmse:.2f}, MAE: {mae:.2f}, MAPE: {mape:.2f}, SMAPE: {smape:.2f}, R2: {r2:.2f}"
+    )
+
+    # Save predictions and evaluation
+    predictions_file = os.path.join(target_save_dir, f"{target}_predictions.csv")
+    pd.DataFrame({"Actual": y_true, "Predicted": y_pred}).to_csv(
+        predictions_file, index=False
+    )
+    log.info(f"Predictions for target '{target}' saved to {predictions_file}.")
+
+
+@hydra.main(
+    config_path=os.path.join(PROJECT_DIR, 'configs'),
+    config_name='train',
+    version_base=None,
+)
+def main(cfg: DictConfig) -> None:
+    log.info(f'Config:\n\n{OmegaConf.to_yaml(cfg)}')
+
+    # Define absolute paths
+    data_path = str(os.path.join(PROJECT_DIR, cfg.data_path))
+    pipeline_path = str(os.path.join(PROJECT_DIR, cfg.pipeline_path))
+    save_dir = str(os.path.join(PROJECT_DIR, cfg.save_dir))
+
+    os.makedirs(save_dir, exist_ok=True)
+
+    # Load dataset
+    df = load_dataset(data_path)
+
+    # Load the scaler
+    scaler = load_scaler(
+        column_name=cfg.target_column,
+        pipeline_path=pipeline_path,
+    )
+
+    # Train-test split
+    x_train, x_test, y_train, y_test = prepare_train_test_split(
+        df=df,
+        target_column=cfg.target_column,
+        test_size=cfg.test_size,
+        seed=cfg.seed,
+    )
+
+    # Train MLJAR AutoML model
+    train_model(
+        x_train=x_train,
+        y_train=y_train,
+        x_test=x_test,
+        y_test=y_test,
+        automl_params=cfg.automl_params,
+        target=cfg.target_column,
+        scaler=scaler,
+        save_dir=save_dir,
+    )
+
+    log.info("Training complete!")
+
+
+if __name__ == '__main__':
+    main()

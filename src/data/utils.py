@@ -1,10 +1,21 @@
 import ast
+import logging
 import os
+import pickle
+from functools import wraps
 from pathlib import Path
-from typing import List, Union
+from typing import Callable, List, Union
 
 import numpy as np
 import pandas as pd
+import torch
+from dotenv import load_dotenv
+from openai import OpenAI
+from tqdm import tqdm
+from transformers import AutoModel, AutoTokenizer
+
+load_dotenv()
+log = logging.getLogger()
 
 DATASET_COLUMN_MAPPING = {
     # General information
@@ -244,6 +255,171 @@ def get_file_list(
 
 def normalize_to_snake_name(skill: str):
     return skill.replace(' ', '_').lower()
+
+
+def get_embeddings(
+    texts: List[str],
+    batch_size: int = 1000,
+    model: str = 'text-embedding-3-large',
+) -> np.ndarray:
+    """Generates embeddings for a list of strings using OpenAI's API.
+
+    Args:
+        texts (List[str]): A list of strings to generate embeddings for.
+        batch_size (int): The size of the batches for API requests. Defaults to 1000.
+        model (str): The OpenAI model to use for generating embeddings. Defaults to 'text-embedding-3-large'.
+
+    Returns:
+        np.ndarray: A numpy array of embeddings.
+    """
+    cleaned_texts = [text if isinstance(text, str) and text != '' else 'Missing' for text in texts]
+    embeddings = []
+
+    openai_client = OpenAI()
+    for i in range(0, len(cleaned_texts), batch_size):
+        batch = cleaned_texts[i : i + batch_size]
+        response = openai_client.embeddings.create(input=batch, model=model)
+        embeddings.extend([res.embedding for res in response.data])
+    return np.array(embeddings)
+
+
+def save_model_to_pickle(model, model_path: str):
+    """Save a model to a pickle file."""
+    try:
+        with open(model_path, 'wb') as f:
+            pickle.dump(model, f)
+        log.info(f"Model saved to {model_path}")
+    except Exception as e:
+        log.error(f"Failed to save model to {model_path}: {e}")
+
+
+def load_model_from_pickle(model_path: str):
+    """Load a model from a pickle file."""
+    try:
+        with open(model_path, 'rb') as f:
+            model = pickle.load(f)
+        log.info(f"Model loaded from {model_path}")
+        return model
+    except Exception as e:
+        log.error(f"Failed to load model from {model_path}: {e}")
+        return None
+
+
+def cache_model(func: Callable) -> Callable:
+    """Decorator to cache the model and tokenizer, ensuring they are loaded only once and moved to the GPU.
+
+    Args:
+        func (Callable): The function to be wrapped.
+
+    Returns:
+        Callable: The wrapped function.
+    """
+    cache = {}
+
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        model_name = kwargs.get('model', 'thenlper/gte-large')
+
+        # Determine the best available device
+        device = torch.device('cpu')
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()
+            device = torch.device('cuda')
+        elif torch.backends.mps.is_available():
+            torch.mps.empty_cache()
+            device = torch.device('mps')
+
+        if model_name not in cache:
+            # Load the model and tokenizer
+            try:
+                tokenizer = AutoTokenizer.from_pretrained(model_name)
+                model = AutoModel.from_pretrained(model_name).to(device)
+                cache[model_name] = (tokenizer, model, device)
+                log.info(
+                    f"Successfully loaded model '{model_name}' and tokenizer on device: {device}.",
+                )
+            except Exception as e:
+                log.error(f"Failed to load model '{model_name}': {e}")
+                raise
+        else:
+            log.info(
+                f"Using cached model '{model_name}' and tokenizer on device: {cache[model_name][2]}.",
+            )
+
+        # Pass the cached model, tokenizer, and device to the wrapped function
+        tokenizer, model, device = cache[model_name]
+        return func(*args, **kwargs, tokenizer=tokenizer, model_=model, device=device)
+
+    return wrapper
+
+
+@cache_model
+def get_embeddings_gte(
+    texts: List[str],
+    batch_size: int = 1000,
+    model: str = 'thenlper/gte-large',
+    tokenizer=None,
+    model_=None,
+    device=None,
+) -> np.ndarray:
+    """Generates embeddings for a list of strings using the gte-large model from Hugging Face.
+
+    Args:
+        texts (List[str]): A list of strings to generate embeddings for.
+        batch_size (int): The size of the batches for inference. Defaults to 1000.
+        model (str): The Hugging Face model to use for generating embeddings. Defaults to 'thenlper/gte-large'.
+        tokenizer: Cached tokenizer (injected by the decorator).
+        model_: Cached model (injected by the decorator).
+        device: Device where the model is loaded (injected by the decorator).
+
+    Returns:
+        np.ndarray: A numpy array of embeddings.
+    """
+    # Ensure texts are non-empty strings
+    cleaned_texts = [
+        text if isinstance(text, str) and text.strip() != '' else 'Missing' for text in texts
+    ]
+
+    # List to store embeddings
+    embeddings = []
+
+    log.info(f"Using device: {device}")
+    try:
+        # Process texts in batches with a progress bar
+        for i in tqdm(range(0, len(cleaned_texts), batch_size), desc='Processing batches'):
+            batch = cleaned_texts[i : i + batch_size]
+            tokens = tokenizer(
+                batch,
+                padding=True,
+                truncation=True,
+                max_length=512,
+                return_tensors='pt',
+            )
+
+            tokens = {key: value.to(device) for key, value in tokens.items()}
+
+            with torch.no_grad():
+                # Forward pass through the model
+                outputs = model_(**tokens)
+                # Use the CLS token embeddings for sentence-level representation
+                batch_embeddings = outputs.last_hidden_state[:, 0, :].cpu().numpy()
+                embeddings.extend(batch_embeddings)
+
+            # Clear cache to release memory
+            if device.type == 'cuda':
+                torch.cuda.empty_cache()
+            elif device.type == 'mps':
+                torch.mps.empty_cache()
+
+    finally:
+        # Clean up resources
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()
+        if torch.backends.mps.is_available():
+            torch.mps.empty_cache()
+        log.info('Released GPU resources.')
+
+    return np.array(embeddings)
 
 
 if __name__ == '__main__':

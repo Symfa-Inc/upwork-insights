@@ -4,7 +4,7 @@ import unidecode
 from geonamescache import GeonamesCache
 from Levenshtein import ratio
 
-from src.data.country_processor import CountryProcessor
+from src.data.location_processors.country_processor import CountryProcessor
 
 
 class CityProcessor:
