@@ -7,9 +7,9 @@ from omegaconf import DictConfig, OmegaConf
 from sklearn.cluster import KMeans, MiniBatchKMeans
 
 from src import PROJECT_DIR
+from src.data.feature_processors.cosine_k_means import CosineKMeans
 from src.data.utils import get_embeddings, get_embeddings_gte
 from src.vis.utils import (
-    CosineKMeans,
     calculate_and_save_embeddings,
     fit_clustering_methods,
     log,

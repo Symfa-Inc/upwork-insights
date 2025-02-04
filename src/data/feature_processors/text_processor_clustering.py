@@ -3,6 +3,7 @@ from typing import Dict, Optional, Type, Union
 import pandas as pd
 from sklearn.cluster import KMeans
 
+from src.data.feature_processors.cosine_k_means import CosineKMeans
 from src.data.feature_processors.text_processor import TextProcessor
 
 
@@ -14,7 +15,7 @@ class TextProcessorClustering(TextProcessor):
         column_name: str,
         model: str,
         embeddings_dir: str,
-        clustering_class: Union[Type[KMeans]] = KMeans,
+        clustering_class: Union[Type[KMeans], Type[CosineKMeans]] = KMeans,
         clustering_params: Optional[Dict] = None,
         cluster_column_name: Optional[str] = None,
     ):
