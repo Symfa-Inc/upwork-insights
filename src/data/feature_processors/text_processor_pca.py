@@ -30,6 +30,7 @@ class TextProcessorPCA(TextProcessor):
         pca_threshold: float = 0.85,
         min_components: int = 5,
         max_components: int = 25,
+        drop_column: bool = True,
     ):
         """Initializes the TextProcessorPCA with PCA parameters.
 
@@ -42,6 +43,7 @@ class TextProcessorPCA(TextProcessor):
             pca_threshold (float): Explained variance ratio threshold for PCA.
             min_components (int): Minimum number of principal components.
             max_components (int): Maximum number of principal components.
+            drop_column (bool): Defines behaviour of the original column after transform. Used for combine processors.
         """
         super().__init__(column_name, model, embeddings_dir)
 
@@ -57,6 +59,7 @@ class TextProcessorPCA(TextProcessor):
         self.max_components = max_components
         self.pca_class = pca_class
         self.pca_params = pca_params or {}
+        self.drop_column = drop_column
 
     def _fit(self, df: pd.DataFrame):
         """Fits the processor by generating embeddings and applying PCA.
@@ -106,8 +109,10 @@ class TextProcessorPCA(TextProcessor):
             for i in range(embeddings_pca.shape[1])
         }
         pc_df = pd.DataFrame(pc_columns, index=df.index)
+        if self.drop_column:
+            df = df.drop(columns=[self.column_name])
 
-        return df.drop(columns=[self.column_name]).join(pc_df)
+        return df.join(pc_df)
 
     def get_params(self) -> dict:
         return {

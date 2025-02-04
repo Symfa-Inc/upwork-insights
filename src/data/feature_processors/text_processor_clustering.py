@@ -18,6 +18,7 @@ class TextProcessorClustering(TextProcessor):
         clustering_class: Union[Type[KMeans], Type[CosineKMeans]] = KMeans,
         clustering_params: Optional[Dict] = None,
         cluster_column_name: Optional[str] = None,
+        drop_column: bool = True,
     ):
         """Initializes the TextProcessorClustering with clustering parameters.
 
@@ -28,11 +29,13 @@ class TextProcessorClustering(TextProcessor):
             clustering_class (Type): The clustering algorithm class to use.
             clustering_params (Dict): Parameters for the clustering algorithm.
             cluster_column_name (str): Custom name for the cluster feature column.
+            drop_column (bool): Defines behaviour of the original column after transform. Used for combine processors.
         """
         super().__init__(column_name, model, embeddings_dir)
         self.clustering_class = clustering_class
         self.clustering_params = clustering_params or {}
         self.cluster_column_name = cluster_column_name or f"{column_name}_Cluster"
+        self.drop_column = drop_column
 
     def _fit(self, df: pd.DataFrame):
         """Fits the clustering model on the text embeddings.
@@ -65,7 +68,10 @@ class TextProcessorClustering(TextProcessor):
         # Create DataFrame with cluster assignments
         cluster_df = pd.DataFrame({self.cluster_column_name: cluster_labels}, index=df.index)
 
-        return df.drop(columns=[self.column_name]).join(cluster_df)
+        if self.drop_column:
+            df = df.drop(columns=[self.column_name])
+
+        return df.join(cluster_df)
 
     def get_params(self) -> dict:
         return {

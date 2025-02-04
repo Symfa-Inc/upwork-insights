@@ -15,6 +15,7 @@ class TextProcessorStatistics(TextProcessor):
         model: str,
         embeddings_dir: str,
         statistics: Optional[List[str]] = None,
+        drop_column: bool = True,
     ):
         """Initializes the TextProcessorStatistics with statistical parameters.
 
@@ -23,9 +24,11 @@ class TextProcessorStatistics(TextProcessor):
             model (str): The embedding model to use.
             embeddings_dir (str): Directory where embeddings should be stored.
             statistics (List[str]): List of statistical metrics to compute. Defaults to ['mean', 'std', 'min', 'max'].
+            drop_column (bool): Defines behaviour of the original column after transform. Used for combine processors.
         """
         super().__init__(column_name, model, embeddings_dir)
         self.statistics = statistics or ['mean', 'std', 'min', 'max']
+        self.drop_column = drop_column
 
     def _fit(self, df: pd.DataFrame):
         """No fitting required for statistical computation."""
@@ -54,7 +57,10 @@ class TextProcessorStatistics(TextProcessor):
             stats_dict[f"{self.column_name}_max"] = np.max(embeddings, axis=1)
 
         stats_df = pd.DataFrame(stats_dict, index=df.index)
-        return df.drop(columns=[self.column_name]).join(stats_df)
+        if self.drop_column:
+            df = df.drop(columns=[self.column_name])
+
+        return df.join(stats_df)
 
     def get_params(self) -> dict:
         return {
