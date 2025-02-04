@@ -4,3 +4,6 @@ defaults:
 
 data_path: data/clean/clean.csv
 save_dir: data/final
+
+embeddings_dir: data/embeddings
+embeddings_model: thenlper/gte-small
