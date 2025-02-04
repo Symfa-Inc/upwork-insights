@@ -53,22 +53,20 @@ class TextProcessor(BaseProcessor, ABC):
         self,
         texts: List[str],
         batch_size: int = 1000,
-        model: str = 'text-embedding-3-large',
     ) -> np.ndarray:
         """Generates embeddings for a list of strings using the specified model.
 
         Args:
             texts (List[str]): A list of strings to generate embeddings for.
             batch_size (int): The size of the batches for API requests. Defaults to 1000.
-            model (str): The embedding model to use. Defaults to 'text-embedding-3-large'.
 
         Returns:
             np.ndarray: A numpy array containing the generated embeddings.
         """
         if self.model in {'text-embedding-3-small', 'text-embedding-3-large'}:
-            return get_embeddings(texts, batch_size, model=model)
+            return get_embeddings(texts, batch_size, model=self.model)
         elif self.model in {'thenlper/gte-small', 'thenlper/gte-large'}:
-            return get_embeddings_gte(texts, batch_size, model=model)
+            return get_embeddings_gte(texts, batch_size, model=self.model)
         else:
             raise ValueError(f"Unsupported model: {self.model}")
 
