@@ -1,6 +1,6 @@
 stages:
 
-  # STAGE 0
+  # STAGE 1
   load_raw_data:
     cmd:
     - echo "\nSTAGE 0\n"
@@ -21,7 +21,7 @@ stages:
     - data/raw/SIMILAR_JOBS.csv.gz
     - data/raw/WORK_HISTORY.csv.gz
 
-  # STAGE I
+  # STAGE 2
   convert_raw_to_int:
     cmd:
     - echo "\nSTAGE I\n"
@@ -43,7 +43,7 @@ stages:
     outs:
     - data/interim/jobs.csv
 
-  # STAGE II
+  # STAGE 3
   convert_int_to_clean:
     cmd:
     - echo "\nSTAGE II\n"
@@ -56,7 +56,7 @@ stages:
     - data/clean/cities.csv
     - data/clean/clean.csv
 
-  # STAGE III
+  # STAGE 4
   convert_clean_to_final:
     cmd:
     - echo "\nSTAGE III\n"
