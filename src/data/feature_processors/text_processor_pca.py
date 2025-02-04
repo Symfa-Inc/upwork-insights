@@ -56,7 +56,7 @@ class TextProcessorPCA(TextProcessor):
         self.min_components = min_components
         self.max_components = max_components
         self.pca_class = pca_class
-        self.pca_params = pca_params if pca_params else {}
+        self.pca_params = pca_params or {}
 
     def _fit(self, df: pd.DataFrame):
         """Fits the processor by generating embeddings and applying PCA.
