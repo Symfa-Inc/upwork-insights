@@ -1,0 +1,18 @@
+text_columns:
+- title
+- description
+- company_name
+- company_description
+- company_summary
+
+max_n_components:
+  thenlper/gte-small: 384
+  thenlper/gte-large: 1024
+  text-embedding-3-small: 1536
+  text-embedding-3-large: 3072
+
+batch_size:
+  thenlper/gte-small: 100
+  thenlper/gte-large: 100
+  text-embedding-3-small: 1000
+  text-embedding-3-large: 1000

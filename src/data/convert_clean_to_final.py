@@ -7,16 +7,17 @@ from omegaconf import DictConfig, OmegaConf
 
 from src import PROJECT_DIR
 from src.data.feature_processors import FeatureProcessingPipeline
-from src.data.pipeline_stages import STAGES
+from src.data.pipeline_stages import get_stages
 from src.data.utils import get_csv_converters
 
 log = logging.getLogger(__name__)
 log.setLevel(logging.INFO)
 
 
-def set_up_pipeline() -> FeatureProcessingPipeline:
+def set_up_pipeline(model: str, embeddings_dir: str) -> FeatureProcessingPipeline:
+    stages = get_stages(model=model, embeddings_dir=embeddings_dir)
     return FeatureProcessingPipeline(
-        [processor(column, **kwargs) for column, processor, kwargs in STAGES],
+        [processor(column, **kwargs) for column, processor, kwargs in stages],
     )
 
 
@@ -31,12 +32,15 @@ def main(cfg: DictConfig) -> None:
     # Define absolute paths
     save_dir = str(os.path.join(PROJECT_DIR, cfg.save_dir))
     data_path = str(os.path.join(PROJECT_DIR, cfg.data_path))
+    embeddings_model = cfg.embeddings_model
+    embeddings_dir = str(os.path.join(PROJECT_DIR, cfg.embeddings_dir))
 
     # Read the dataset
-    df = pd.read_csv(data_path, converters=get_csv_converters())  # .sample(1000)  # noqa: F841
+    df = pd.read_csv(data_path, converters=get_csv_converters())  # noqa: F841
+    # df = pd.read_csv(data_path, converters=get_csv_converters()).sample(1000)  # noqa: F841
 
     # Load pipeline
-    pipeline = set_up_pipeline()
+    pipeline = set_up_pipeline(model=embeddings_model, embeddings_dir=embeddings_dir)
 
     # Transform data with the pipeline
     df = pipeline.execute(df)

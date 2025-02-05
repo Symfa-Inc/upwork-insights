@@ -10,9 +10,7 @@ from omegaconf import DictConfig, OmegaConf
 from openai import AsyncOpenAI
 
 from src import PROJECT_DIR
-from src.data.city_processor import CityProcessor
-from src.data.country_processor import CountryProcessor
-from src.data.location_normalizer import LocationNormalizer
+from src.data.location_processors import CityProcessor, CountryProcessor, LocationNormalizer
 from src.data.utils import COLUMNS_TO_REMOVE, DATASET_COLUMN_MAPPING, get_csv_converters
 
 log = logging.getLogger(__name__)

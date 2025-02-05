@@ -1,0 +1,11 @@
+defaults:
+- main
+- _self_
+- embeddings
+
+data_path: data/clean/clean.csv
+embeddings_path: data/embeddings
+save_dir: eval/embeddings_dimensionality_reduction_
+
+embeddings_model_url: text-embedding-3-small
+# other options thenlper/gte-small, thenlper/gte-large, text-embedding-3-small, text-embedding-3-large

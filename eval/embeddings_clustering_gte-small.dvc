@@ -1,0 +1,6 @@
+outs:
+- md5: a76a32df1dcd329d9475e7ee727779c3.dir
+  size: 1246308690
+  nfiles: 3005
+  hash: md5
+  path: embeddings_clustering_gte-small

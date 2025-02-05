@@ -4,6 +4,7 @@ from contextlib import contextmanager
 
 import hydra
 import snowflake.connector
+from cryptography.hazmat.primitives import serialization
 from dotenv import load_dotenv
 from omegaconf import DictConfig, OmegaConf
 
@@ -79,6 +80,29 @@ def main(cfg: DictConfig) -> None:
     stage_name = cfg.snowflake_tmp_stage
     os.makedirs(save_dir, exist_ok=True)
 
+    # Get RSA key path and passphrase from environment variables
+    private_key_path = os.path.expanduser(
+        os.getenv('SNOWFLAKE_PATH_TO_RSA', '~/.ssh/rsa_snowflake_encrypted.p8'),
+    )
+    private_key_passphrase = os.getenv('SNOWFLAKE_RSA_PASSPHRASE', None)
+
+    # Load the private key
+    with open(private_key_path, 'rb') as key_file:
+        key_data = key_file.read()
+
+    # Decrypt the key with passphrase
+    private_key = serialization.load_pem_private_key(
+        key_data,
+        password=private_key_passphrase.encode() if private_key_passphrase else None,
+    )
+
+    # Convert to DER format bytes (unencrypted) as Snowflake requires
+    private_key_bytes = private_key.private_bytes(
+        encoding=serialization.Encoding.DER,  # Changed from PEM to DER
+        format=serialization.PrivateFormat.PKCS8,
+        encryption_algorithm=serialization.NoEncryption(),
+    )
+
     # Establish Snowflake connection
     conn = snowflake.connector.connect(
         user=os.getenv('SNOWFLAKE_USER'),
@@ -88,6 +112,7 @@ def main(cfg: DictConfig) -> None:
         database=os.getenv('SNOWFLAKE_DATABASE'),
         schema=os.getenv('SNOWFLAKE_SCHEMA'),
         role=os.getenv('SNOWFLAKE_ROLE'),
+        private_key=private_key_bytes,
     )
     cursor = conn.cursor()
 

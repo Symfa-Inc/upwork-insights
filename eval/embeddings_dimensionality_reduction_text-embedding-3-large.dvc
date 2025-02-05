@@ -1,0 +1,6 @@
+outs:
+- md5: c1fdc35dd825a7cf1b27070a316e0677.dir
+  size: 1137801881
+  nfiles: 20
+  hash: md5
+  path: embeddings_dimensionality_reduction_text-embedding-3-large

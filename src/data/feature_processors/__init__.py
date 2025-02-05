@@ -10,4 +10,10 @@ from src.data.feature_processors.list_processor import ListProcessor  # noqa: F4
 from src.data.feature_processors.numeric_processor import NumericProcessor  # noqa: F401
 from src.data.feature_processors.one_hot_processor import OneHotProcessor  # noqa: F401
 from src.data.feature_processors.ordinal_processor import OrdinalProcessor  # noqa: F401
-from src.data.feature_processors.text_processor import TextProcessor  # noqa: F401
+from src.data.feature_processors.text_processor_clustering import (  # noqa: F401
+    TextProcessorClustering,
+)
+from src.data.feature_processors.text_processor_pca import TextProcessorPCA  # noqa: F401
+from src.data.feature_processors.text_processor_statistics import (  # noqa: F401
+    TextProcessorStatistics,
+)

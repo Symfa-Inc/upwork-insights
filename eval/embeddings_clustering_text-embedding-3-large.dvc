@@ -1,0 +1,6 @@
+outs:
+- md5: ac6134d98375e21fe0971b09d9031d51.dir
+  size: 4504042508
+  nfiles: 3005
+  hash: md5
+  path: embeddings_clustering_text-embedding-3-large

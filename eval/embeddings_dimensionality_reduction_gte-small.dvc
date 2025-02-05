@@ -1,0 +1,6 @@
+outs:
+- md5: 655405dde5bb0e4238477b432ac053e5.dir
+  size: 21369677
+  nfiles: 20
+  hash: md5
+  path: embeddings_dimensionality_reduction_gte-small
