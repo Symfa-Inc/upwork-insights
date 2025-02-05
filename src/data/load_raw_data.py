@@ -82,7 +82,7 @@ def main(cfg: DictConfig) -> None:
 
     # Get RSA key path and passphrase from environment variables
     private_key_path = os.path.expanduser(
-        os.getenv('SNOWFLAKE_PATH_TO_RSA', '~/.ssh/rsa_airflow_encrypted.p8'),
+        os.getenv('SNOWFLAKE_PATH_TO_RSA', '~/.ssh/rsa_snowflake_encrypted.p8'),
     )
     private_key_passphrase = os.getenv('SNOWFLAKE_RSA_PASSPHRASE', None)
 
